@@ -1,4 +1,4 @@
-
+#include <Wire.h>
 class Pump{
   int pinNum;
   int capacity;
@@ -19,29 +19,48 @@ class PerystalticPump:Pump{
 };
 class SyringePump:Pump{
   static const int pinNum=4;
+  const int stepDelay=3;
   int pins[pinNum];
   public:
   SyringePump(int pins[4]){
-          for(int i=0;i<pinNum;i++){
-        this->pins[i]=pins[i];
-      }
+    for(int i=0;i<pinNum;i++){
+      this->pins[i]=pins[i];
+    }
   }
   void dosing(int dose){
     while (dose>0){
       for(int i=0;i<pinNum;i++){
-        digitalWrite
+        digitalWrite(this->pins[i],HIGH);
+        delay(this->stepDelay);
+        digitalWrite(this->pins[i],LOW);
       }
+      dose--;
     }
   }
 };
+
+int pins1[4]={2,3,4,5};
+SyringePump phPlusPump(pins1);
+int pins2[4]={6,7,8,9};
+SyringePump phMinusPump (pins2);
+int pins3[4]={10,11,12,13};
+SyringePump costamPump (pins3);
+
+void receiveEvent(int cosa) {
+  phPlusPump.dosing(1000);
+  Serial.println("dosing");
+}
+
 void setup() {
   // put your setup code here, to run once:
-  int pins[4]={2,3,4,5};
-  SyringePump phPlusPump(pins);
-
+  Serial.begin(9600);
+  Wire.begin(0x8);
+  Wire.onReceive(receiveEvent);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  
+  Serial.println("witam");
+  delay(1000);
 
 }
