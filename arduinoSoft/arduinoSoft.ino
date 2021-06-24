@@ -46,21 +46,25 @@ SyringePump phMinusPump (pins2);
 int pins3[4]={10,11,12,13};
 SyringePump costamPump (pins3);
 
-void receiveEvent(int cosa) {
+void receiveEvent(int byte_count) {
+  for (int i = 0; i < byte_count; i++) {
+    int data_to_echo = Wire.read();
+  }
   phPlusPump.dosing(1000);
-  Serial.println("dosing");
+}
+
+void requestEvent(){
+  Wire.write(10);
 }
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
+  //Serial.begin(9600);
   Wire.begin(0x8);
   Wire.onReceive(receiveEvent);
+  Wire.onRequest(requestEvent);
 }
 
 void loop() {
-  
-  Serial.println("witam");
-  delay(1000);
 
 }
