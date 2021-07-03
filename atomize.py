@@ -12,7 +12,7 @@ if there is one argument (delay) then:
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(4, GPIO.OUT)
-if len(sys.argv)==0:
+if len(sys.argv)==1:
     if GPIO.input(4):
         GPIO.output(4, GPIO.LOW) #turn atomizer on
     else:

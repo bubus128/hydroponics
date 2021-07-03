@@ -1,13 +1,17 @@
 from smbus import SMBus
 import time
+import sys
 
-addr = 0x7 #arduino nano adress (pumps)
+'''
+there must be 2 arguments
+argument 1 = pump number
+argument 2 = dose
+'''
+
+addr = 0x7 #arduino nano adress
 bus =SMBus(1)
-data=[1,1]
-#bus.write_block_data(addr,0,data)
-tds=bus.read_byte(addr)
-print(tds)
-bus.write_byte(addr,5)
-time.sleep(1)
-ph=bus.read_byte(addr)
-print(ph)
+if len(sys.argv)==3:
+    pump=int(sys.argv[1])
+    dose=int(sys.argv[2])
+    data=[pump,dose]
+    bus.write_block_data(addr,0,data)
