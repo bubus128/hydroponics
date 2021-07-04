@@ -21,7 +21,7 @@ bool DosingQueue::is_empty(){
     return (queue==NULL);
 }
 
-QueueElemnt::QueueElement(int pump,int dose,QueueElemnt next){
+QueueElemnt::QueueElement(int pump,int dose,QueueElemnt* next){
     this->pump=pump;
     this->dose=dose;
     this->next=next;

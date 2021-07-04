@@ -12,6 +12,6 @@ class QueueElemnt{
     int dose;
     int pump;
     QueueElemnt* next;
-    QueueElemnt(int pump,int dose,QueueElemnt next);
+    QueueElemnt(int pump,int dose,QueueElemnt* next);
 }
 #endif
