@@ -1,5 +1,6 @@
 #include <Wire.h>
 #include "Pump.h"
+#include "DosingQueue.h"
 #define TdsSensorPin A2
 #define PhSensorPin A3
 #define VREF 5.0      // analog reference voltage(Volt) of the ADC
@@ -10,6 +11,7 @@ int analogBufferTemp[SCOUNT];
 int analogBufferIndex = 0,copyIndex = 0;
 int averageVoltage = 0,tdsValue = 0,temperature = 25;
 
+DosingQueue dosing_queue;
 int pins1[4]={2,3,4,5};
 SyringePump phPlusPump(pins1);
 int pins2[4]={6,7,8,9};
@@ -20,19 +22,15 @@ int sensor=0;
 int pomp_buffer[2][30];
 
 void receiveEvent(int byte_count) {
-  phMinusPump.dosing(100);
   if(Wire.read()==5){
     Serial.println("sensor change");
     sensor=(sensor+1)%2;
     return;
   }
   Wire.read(); //byte_count
-  int pump_num = Wire.read();
+  int pump = Wire.read();
   int dose = 1000*Wire.read();
-  if(pump_num==1)
-    phPlusPump.dosing(dose);
-  else if(pump_num==2)
-    phMinusPump.dosing(dose);
+  dosing_queue.add(pump,dose);
 }
 void requestEvent(){
   if(sensor==0){
@@ -63,10 +61,18 @@ void setup() {
 }
 
 void dosingActions(){
-  
+  while(!dosing_queue.is_empty()){
+    int* dosing_action=dosing_queue.get_next();
+    Serial.println(dosing_action[0]+" "+dosing_action[1]);
+    if(dosing_action[0]==1)
+      phPlusPump.dosing(dosing_action[1]);
+    else if(dosing_action[0]==2)
+      phMinusPump.dosing(dosing_action[1]);
+  }
+  Serial.println("dosing queue empty");
 }
 
 void loop() {
-  delay(10);
-  
+  delay(500);
+  dosingActions();
 }
