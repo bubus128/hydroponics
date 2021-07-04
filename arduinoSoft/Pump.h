@@ -1,5 +1,5 @@
-#ifndef Morse_h
-#define Morse_h
+#ifndef Pump_h
+#define Pump_h
 #include "Arduino.h"
 class Pump{
   int pinNum;
@@ -18,7 +18,7 @@ class PerystalticPump:Pump{
 class SyringePump:Pump{
   private:
   static const int pinNum=4;
-  const int stepDelay=3;
+  const int stepDelay=4;
   int pins[pinNum];
   public:
   SyringePump(int pins[4]);
