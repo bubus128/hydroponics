@@ -63,11 +63,11 @@ void setup() {
 void dosingActions(){
   while(!dosing_queue.is_empty()){
     int* dosing_action=dosing_queue.get_next();
-    Serial.println(dosing_action[0]+" "+dosing_action[1]);
-    if(dosing_action[0]==1)
-      phPlusPump.dosing(dosing_action[1]);
-    else if(dosing_action[0]==2)
-      phMinusPump.dosing(dosing_action[1]);
+    Serial.println(*dosing_action+" "+*(dosing_action+1));
+    if(*dosing_action==1)
+      phPlusPump.dosing(*(dosing_action+1));
+    else if(*dosing_action==2)
+      phMinusPump.dosing(*(dosing_action+1));
   }
   Serial.println("dosing queue empty");
 }

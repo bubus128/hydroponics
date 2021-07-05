@@ -14,7 +14,7 @@ DosingQueue::DosingQueue(){
 int* DosingQueue:: get_next(){
     if(this->is_empty())
         return NULL;
-    int tab[2]={this->queue->pump,this->queue->dose};
+    static int tab[2]={this->queue->pump,this->queue->dose};
     this->queue=this->queue->next;
     return(tab);
 }
