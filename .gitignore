@@ -129,3 +129,6 @@ dmypy.json
 .pyre/
 
 poetry.lock
+#vs code
+.vscode/
+vsbuild/
