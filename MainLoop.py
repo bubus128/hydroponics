@@ -3,6 +3,9 @@ import time
 
 
 class Hydroponics:
+
+    # TODO
+    daily_light_cycle=None
     
     sensors_indications={
         'ph':None,
@@ -53,4 +56,31 @@ class Hydroponics:
         for light in range(lights_number,len(self.lights_list)):
             GPIO.output(self.light_list[light], GPIO.LOW)
 
+    def readPH(self):
+        # TODO: PH sensor indication read
+        pass
     
+    def readTDS(self):
+        # TODO: TDS sensor indication read
+        pass
+
+    def readLightIntensity(self):
+        # TODO: Light intesity read (in lux)
+        pass
+
+    def mainLoop(self):
+       '''
+       TODO:
+       1.Read all sensors indications
+       2.Lights control
+        -set lights based on daily light cycle
+       3.Temperature control 
+        -switch on/off cooling
+       4.Humidity control 
+        -switch on/off atomization
+        -switch on/off ventilation
+       5.Substances dosing
+       6.Make a photo
+       '''
+       pass
+        
