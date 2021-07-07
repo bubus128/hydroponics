@@ -68,6 +68,18 @@ class Hydroponics:
         # TODO: Light intesity read (in lux)
         pass
 
+    def atomization(self):
+        # TODO: Atomization
+        pass
+
+    def ventylation(self):
+        # TODO: Ventylation
+        pass
+
+    def cooling(self):
+        # TODO: cooling
+        pass
+
     def mainLoop(self):
        '''
        TODO:
