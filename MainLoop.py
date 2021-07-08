@@ -78,9 +78,11 @@ class Hydroponics:
         time.sleep(delay) # wait (delay) seconds
         GPIO.output(self.gpi_pins_dict['atomizer'], GPIO.LOW) #turn atomizer back off
 
-    def ventylation(self):
-        # TODO: Ventylation
-        pass
+    def ventylation(self, switch=False):
+        if switch:
+            GPIO.output(self.gpi_pins_dict['fan'], GPIO.LOW)
+        else:
+            GPIO.output(self.gpi_pins_dict['fan'], GPIO.HIGH)
 
     def cooling(self, switch=False):
         if switch:
