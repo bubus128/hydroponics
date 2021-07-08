@@ -1,6 +1,8 @@
 import RPi.GPIO as GPIO
 import sys
 import time
+import adafruit_tsl2591
+import board
 
 
 class Hydroponics:
@@ -51,7 +53,13 @@ class Hydroponics:
         GPIO.output(9, GPIO.HIGH)
         GPIO.output(10, GPIO.HIGH)
         GPIO.output(18, GPIO.HIGH)
-        GPIO.output(23, GPIO.HIGH)        
+        GPIO.output(23, GPIO.HIGH)  
+
+        # TSL2591 setup
+        i2c = board.I2C()
+        self.tsl2591_sensor = adafruit_tsl2591.TSL2591(i2c)
+        adafruit_tsl2591.GAIN_LOW #set gan to low (stron light measuring)
+        adafruit_tsl2591.INTEGRATIONTIME_100MS      
 
     def lightControl(self,lights_number=0):
         # Switch on 'light_number' lights
@@ -70,8 +78,18 @@ class Hydroponics:
         pass
 
     def readLightIntensity(self):
-        # TODO: Light intesity read (in lux)
-        pass
+        while True:
+            try:
+                lux = self.tsl2591_sensor.lux
+                return lux
+
+            except RuntimeError as error:
+                print(error.args[0])
+                time.sleep(1.5)
+                continue
+
+            except Exception as error:
+                raise error
 
     def atomization(self,delay):
         GPIO.output(self.gpi_pins_dict['atomizer'], GPIO.HIGH) #turn atomizer on
