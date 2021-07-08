@@ -1,4 +1,5 @@
 import RPi.GPIO as GPIO
+import sys
 import time
 
 
@@ -6,7 +7,11 @@ class Hydroponics:
 
     # TODO
     daily_light_cycle=None
-    
+    gpi_pins_dict={
+        'atomizer':4,
+        'cooling':14,
+        'fan':15
+    }
     sensors_indications={
         'ph':None,
         'tds':None,
@@ -26,16 +31,16 @@ class Hydroponics:
             GPIO.output(pin, GPIO.HIGH)
 
         # Atomizer
-        GPIO.setup(4, GPIO.OUT)
-        GPIO.output(4, GPIO.LOW)
+        GPIO.setup(self.gpi_pins_dict['atomizer'], GPIO.OUT)
+        GPIO.output(self.gpi_pins_dict['atomizer'], GPIO.LOW) #Off
 
         # Cooling
-        GPIO.setup(14, GPIO.OUT)
-        GPIO.output(14, GPIO.HIGH) #Off
+        GPIO.setup(self.gpi_pins_dict['cooling'], GPIO.OUT)
+        GPIO.output(self.gpi_pins_dict['cooling'], GPIO.HIGH) #Off
 
         # Fan
-        GPIO.setup(15, GPIO.OUT)
-        GPIO.output(15, GPIO.HIGH) #Off
+        GPIO.setup(self.gpi_pins_dict['fan'], GPIO.OUT)
+        GPIO.output(self.gpi_pins_dict['fan'], GPIO.HIGH) #Off
 
         # Relay (unlocated)
         GPIO.setup(9, GPIO.OUT)
