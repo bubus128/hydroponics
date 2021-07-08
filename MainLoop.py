@@ -82,9 +82,11 @@ class Hydroponics:
         # TODO: Ventylation
         pass
 
-    def cooling(self):
-        # TODO: cooling
-        pass
+    def cooling(self, switch=False):
+        if switch:
+            GPIO.output(self.gpi_pins_dict['cooling'], GPIO.LOW)
+        else:
+            GPIO.output(self.gpi_pins_dict['cooling'], GPIO.HIGH)
 
     def mainLoop(self):
        '''
