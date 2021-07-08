@@ -10,6 +10,10 @@ import requests
 from time import sleep
 
 address = ('https://1027f0e835e5.ngrok.io/')
+amount_of_checks = 3
+temp_upper_limit = 27
+temp_lower_limit = 21
+temp_middle_value = 24
 
 args = {
     'owner': 'airflow',
@@ -17,44 +21,73 @@ args = {
 
 def measure_temp():
     sum=0
-    r = requests.get(address + 'temperature')
-    sum += int(r.text)
-    sleep(5)
-    r = requests.get(address + 'temperature')
-    sum += int(r.text)
-    sleep(5)
-    r = requests.get(address + 'temperature')
-    sum += int(r.text)
-    if sum/3 > 1339:
-        return 'temp_too_high'
-    else:
-        return 'temp_ok'
+    for i in range(amount_of_checks):
+        r = requests.get(address + 'temperature')
+        sum += int(r.text)
+        sleep(1)
+    sum /= amount_of_checks
+    return sum
 
+def check_temp():
+    temperature = measure_temp()
+    print(temperature)
+    if temperature >= temp_upper_limit:
+        return 'lower_temperature'
+    elif temperature <= temp_lower_limit:
+        return 'raise_temperature'
+    return 'everything_is_ok'
+	
+def raise_the_temperature():
+    r = requests.get(address + 'turn_on_heater')
+    raise_temperature = True
+    while(raise_temperature):
+        if(measure_temp() >= temp_middle_value):
+            raise_temperature = False
+        sleep(30)
+    r = requests.get(address + 'turn_off_heater')
+
+def lower_the_temperature():
+    r = requests.get(address + 'turn_on_cooling')
+    lower_temperature = True
+    while(lower_temperature):
+        if(measure_temp() <= temp_middle_value):
+            lower_temperature = False
+        sleep(30)
+    r = requests.get(address + 'turn_off_cooling')
+	
 with DAG(
     dag_id='airflow_temperature',
     default_args=args,
     catchup=False,
     schedule_interval='*/1 * * * *',
+	max_active_runs=1,
     start_date=days_ago(2),
     dagrun_timeout=timedelta(hours=10),
-    tags=['example', 'example2'],
     params={"example_key": "example_value"},
 ) as dag:
 
-    run_this_last = BranchPythonOperator(
-        task_id='python',
-        python_callable=measure_temp
+    check_temp = BranchPythonOperator(
+        task_id='check_temp',
+        python_callable=check_temp
     )
 
 	
-    temp_too_high = DummyOperator(
-        task_id='temp_too_high'
+    lower_temperature = PythonOperator(
+        task_id='lower_temperature',
+        python_callable=lower_the_temperature
     )
-    temp_ok = DummyOperator(
-        task_id='temp_ok'
+    raise_temperature = PythonOperator(
+        task_id='raise_temperature',
+        python_callable=raise_the_temperature
     )
 	
-run_this_last >> [temp_too_high,temp_ok]
+    everything_is_ok = DummyOperator(
+        task_id='everything_is_ok'
+    )
+	
+check_temp >> lower_temperature
+check_temp >> raise_temperature
+check_temp >> everything_is_ok
 
 if __name__ == "__main__":
     dag.cli()
