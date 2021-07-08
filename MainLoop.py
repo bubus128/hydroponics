@@ -73,9 +73,10 @@ class Hydroponics:
         # TODO: Light intesity read (in lux)
         pass
 
-    def atomization(self):
-        # TODO: Atomization
-        pass
+    def atomization(self,delay):
+        GPIO.output(self.gpi_pins_dict['atomizer'], GPIO.HIGH) #turn atomizer on
+        time.sleep(delay) # wait (delay) seconds
+        GPIO.output(self.gpi_pins_dict['atomizer'], GPIO.LOW) #turn atomizer back off
 
     def ventylation(self):
         # TODO: Ventylation
