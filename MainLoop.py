@@ -25,6 +25,28 @@ class Hydroponics:
         'humidity1':None,
         'humidity2':None
     }
+    indication_limits={
+        'ph':{
+            'standard':1,
+            "hysteresis":1
+            },
+        'tds':{
+            'standard':1,
+            "hysteresis":1
+            },
+        'light':{
+            'standard':1,
+            "hysteresis":1
+            },
+        'temperature':{
+            'standard':1,
+            "hysteresis":1
+            },
+        'humidity':{
+            'standard':1,
+            "hysteresis":1
+            },
+    }
     lights_list={0,5,6,11,13,19}
     addr = 0x7 #arduino nano adress
     bus =SMBus(1)
@@ -81,6 +103,7 @@ class Hydroponics:
             try:
                 temperature = self.dht_device.temperature
                 print(f"Temperature: {temperature}")
+                self.sensors_indications['temperature']=temperature
                 return temperature
 
             except RuntimeError as error:
