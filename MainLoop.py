@@ -3,6 +3,7 @@ import sys
 import time
 import adafruit_tsl2591
 import board
+from smbus import SMBus
 
 
 class Hydroponics:
@@ -24,6 +25,8 @@ class Hydroponics:
         'humidity2':None
     }
     lights_list={0,5,6,11,13,19}
+    addr = 0x7 #arduino nano adress
+    bus =SMBus(1)
 
     def setup(self):
         GPIO.setmode(GPIO.BCM)
@@ -70,12 +73,12 @@ class Hydroponics:
             GPIO.output(self.light_list[light], GPIO.LOW)
 
     def readPH(self):
-        # TODO: PH sensor indication read
-        pass
+        self.bus.write_byte(self.addr,5) # switch to the ph sensor
+        return self.bus.read_byte(self.addr)
     
     def readTDS(self):
-        # TODO: TDS sensor indication read
-        pass
+        self.bus.write_byte(self.addr,6) # switch to the tds sensor
+        return self.bus.read_byte(self.addr)
 
     def readLightIntensity(self):
         while True:
