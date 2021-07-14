@@ -2,6 +2,7 @@ import RPi.GPIO as GPIO
 import sys
 import time
 import adafruit_tsl2591
+import adafruit_dht
 import board
 from smbus import SMBus
 
@@ -63,6 +64,9 @@ class Hydroponics:
         self.tsl2591_sensor = adafruit_tsl2591.TSL2591(i2c)
         adafruit_tsl2591.GAIN_LOW #set gan to low (stron light measuring)
         adafruit_tsl2591.INTEGRATIONTIME_100MS      
+        
+        # DTH11 setup
+        self.dht_device = adafruit_dht.DHT11(board.D17)
 
     def lightControl(self,lights_number=0):
         # Switch on 'light_number' lights
@@ -71,6 +75,36 @@ class Hydroponics:
         # Switch off rest of lights
         for light in range(lights_number,len(self.lights_list)):
             GPIO.output(self.light_list[light], GPIO.LOW)
+
+    def readTemperature(self):
+        while(True):
+            try:
+                temperature = self.dht_device.temperature
+                print(f"Temperature: {temperature}")
+                return temperature
+
+            except RuntimeError as error:
+                print(error.args[0])
+                time.sleep(1.5)
+                continue
+
+            except Exception as error:
+                raise error
+
+    def readHumidity(self):
+        while(True):
+            try:
+                humidity = self.dht_device.humidity
+                print(f"Humidity: {humidity} %")
+                return humidity
+
+            except RuntimeError as error:
+                print(error.args[0])
+                time.sleep(1.5)
+                continue
+
+            except Exception as error:
+                raise error
 
     def readPH(self):
         self.bus.write_byte(self.addr,5) # switch to the ph sensor
@@ -83,7 +117,8 @@ class Hydroponics:
     def readLightIntensity(self):
         while True:
             try:
-                lux = self.tsl2591_sensor.lux
+                lux = self.tsl2591_sensor.lux           # Mesasure light intensity
+                self.sensors_indications['light']=lux   # Write light intensity to the sensors_indications dict
                 return lux
 
             except RuntimeError as error:
@@ -125,5 +160,10 @@ class Hydroponics:
        5.Substances dosing
        6.Make a photo
        '''
+       self.readPH()
+       self.readTDS()
+       self.readLightIntensity()
+       self.readTemperature()
+       self.readHumidity()
        pass
         
