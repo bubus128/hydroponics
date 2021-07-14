@@ -9,6 +9,8 @@ python = "~3.9.1"
 pydantic = "==1.8.1"
 gpiozero = "==1.6.2"
 Kivy = "==2.0.0"
+adafruit-circuitpython-dht = "==3.6.1"
+libgpiod2 = "=="
 
 [tool.poetry.dev-dependencies]
 # code quality
