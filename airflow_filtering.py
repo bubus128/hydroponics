@@ -13,6 +13,7 @@ from time import sleep
 
 date = datetime.datetime.now()
 current_day = date.strftime("%d")
+curr_day = int(current_day) - 1
 address = ('https://1027f0e835e5.ngrok.io/')
 
 args = {
@@ -41,7 +42,7 @@ with DAG(
     dag_id='airflow_filtering',
     default_args=args,
     catchup=False,
-    schedule_interval='0 0 ' + str(current_day) + ' */1 *', #At 00:00 on day-of-month (current-day-1) in every month.
+    schedule_interval='0 0 ' + str(curr_day) + ' */1 *', #At 00:00 on day-of-month (current-day-1) in every month.
 	max_active_runs=1,
     start_date=days_ago(2),
     dagrun_timeout=timedelta(hours=10),
