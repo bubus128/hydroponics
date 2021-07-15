@@ -8,6 +8,7 @@ from airflow.utils.dates import days_ago
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 import requests
 from time import sleep
+from airflow.models import Variable
 
 address = ('https://1027f0e835e5.ngrok.io/')
 amount_of_checks = 3
@@ -19,7 +20,22 @@ args = {
     'owner': 'airflow',
 }
 
-	
+def check_phase(ti):
+    r = requests.get(address + 'add_pH_minus')
+    ti.xcom_push(key='tds_value', value=int(r.text))
+    phase = Variable.get("WHAT_PHASE_IT_IT")
+    if phase == "flowering":
+        return 'flowering_phase'
+    return 'growth_phase'
+
+def growth_phase(ti):
+    tds_value = ti.xcom_pull(key='tds_value', task_ids=['check_phase'])
+
+
+def flowering_phase(ti):
+    tds_value = ti.xcom_pull(key='tds_value', task_ids=['check_phase'])
+
+
 with DAG(
     dag_id='airflow_feeding',
     default_args=args,
@@ -31,6 +47,20 @@ with DAG(
     params={"example_key": "example_value"},
 ) as dag:
 
+
+    check_phase = BranchPythonOperator(
+        task_id='check_phase',
+        python_callable=check_phase
+    )
+
+    flowering_phase = PythonOperator(
+        task_id='flowering_phase',
+        python_callable=flowering_phase
+    )
+    growth_phase = PythonOperator(
+        task_id='growth_phase',
+        python_callable=growth_phase
+    )
 
 if __name__ == "__main__":
     dag.cli()
