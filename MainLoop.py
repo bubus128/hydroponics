@@ -26,26 +26,28 @@ class Hydroponics:
         'humidity2':None
     }
     indication_limits={
-        'ph':{
-            'standard':1,
-            "hysteresis":1
-            },
-        'tds':{
-            'standard':1,
-            "hysteresis":1
-            },
-        'light':{
-            'standard':1,
-            "hysteresis":1
-            },
-        'temperature':{
-            'standard':1,
-            "hysteresis":1
-            },
-        'humidity':{
-            'standard':1,
-            "hysteresis":1
-            },
+        'flowering':{
+            'ph':{
+                'standard':6.1,
+                "hysteresis":0.2
+                },
+            'tds':{
+                'standard':1,
+                "hysteresis":1
+                },
+            'light':{
+                'standard':1,
+                "hysteresis":1
+                },
+            'temperature':{
+                'standard':25,
+                "hysteresis":3
+                },
+            'humidity':{
+                'standard':70,
+                "hysteresis":5
+                }
+            }
     }
     lights_list={0,5,6,11,13,19}
     addr = 0x7 #arduino nano adress
