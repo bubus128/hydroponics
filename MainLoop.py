@@ -32,8 +32,8 @@ class Hydroponics:
                 "hysteresis":0.2
                 },
             'tds':{
-                'standard':1,
-                "hysteresis":1
+                'standard':1050,
+                "hysteresis":200
                 },
             'light':{
                 'standard':1,
@@ -174,17 +174,17 @@ class Hydroponics:
 
     def temperatureControl(self):
         avg_temp=(self.sensors_indications['temperature1']+self.sensors_indications['temperature2'])/2
-        if avg_temp>self.indication_limits['temperature']['standard']+self.indication_limits['temperature']['hysteresis']:
+        if avg_temp>self.indication_limits['flowering']['temperature']['standard']+self.indication_limits['flowering']['temperature']['hysteresis']:
             self.cooling(switch=True)
         else:
             self.cooling(switch=False)
 
     def humidityControl(self):
         avg_hum=(self.sensors_indications['humidity1']+self.sensors_indications['humidity2'])/2
-        if avg_hum<self.indication_limits['humidity']['standard']-self.indication_limits['humidity']['hysteresis']:
+        if avg_hum<self.indication_limits['flowering']['humidity']['standard']-self.indication_limits['flowering']['humidity']['hysteresis']:
             self.atomization(switch=True)
             self.ventylation(switch=False)
-        elif avg_hum>self.indication_limits['humidity']['standard']+self.indication_limits['humidity']['hysteresis']:
+        elif avg_hum>self.indication_limits['flowering']['humidity']['standard']+self.indication_limits['flowering']['humidity']['hysteresis']:
             self.ventylation(switch=True)
             self.atomization(switch=False)
         else :
@@ -212,7 +212,4 @@ class Hydroponics:
        self.readHumidity()
        self.temperatureControl()
        self.humidityControl()
-       
-       
-       pass
         
