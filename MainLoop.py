@@ -154,10 +154,11 @@ class Hydroponics:
             except Exception as error:
                 raise error
 
-    def atomization(self,delay):
-        GPIO.output(self.gpi_pins_dict['atomizer'], GPIO.HIGH) #turn atomizer on
-        time.sleep(delay) # wait (delay) seconds
-        GPIO.output(self.gpi_pins_dict['atomizer'], GPIO.LOW) #turn atomizer back off
+    def atomization(self,switch):
+        if switch:
+            GPIO.output(self.gpi_pins_dict['atomizer'], GPIO.HIGH) #turn atomizer on
+        else:
+            GPIO.output(self.gpi_pins_dict['atomizer'], GPIO.LOW) #turn atomizer back off
 
     def ventylation(self, switch=False):
         if switch:
@@ -170,6 +171,25 @@ class Hydroponics:
             GPIO.output(self.gpi_pins_dict['cooling'], GPIO.LOW)
         else:
             GPIO.output(self.gpi_pins_dict['cooling'], GPIO.HIGH)
+
+    def temperatureControl(self):
+        avg_temp=(self.sensors_indications['temperature1']+self.sensors_indications['temperature2'])/2
+        if avg_temp>self.indication_limits['temperature']['standard']+self.indication_limits['temperature']['hysteresis']:
+            self.cooling(switch=True)
+        else:
+            self.cooling(switch=False)
+
+    def humidityControl(self):
+        avg_hum=(self.sensors_indications['humidity1']+self.sensors_indications['humidity2'])/2
+        if avg_hum<self.indication_limits['humidity']['standard']-self.indication_limits['humidity']['hysteresis']:
+            self.atomization(switch=True)
+            self.ventylation(switch=False)
+        elif avg_hum>self.indication_limits['humidity']['standard']+self.indication_limits['humidity']['hysteresis']:
+            self.ventylation(switch=True)
+            self.atomization(switch=False)
+        else :
+            self.atomization(switch=False)
+            self.ventylation(switch=False)
 
     def mainLoop(self):
        '''
@@ -190,5 +210,9 @@ class Hydroponics:
        self.readLightIntensity()
        self.readTemperature()
        self.readHumidity()
+       self.temperatureControl()
+       self.humidityControl()
+       
+       
        pass
         
