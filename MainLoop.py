@@ -16,6 +16,13 @@ class Hydroponics:
         'cooling':14,
         'fan':15
     }
+    pumps={
+        'ph_plus':1,
+        'ph_minus':2,
+        'boost':3,
+        'fertilizer_A':4,
+        'fertilizer_B':5
+    }
     sensors_indications={
         'ph':None,
         'tds':None,
@@ -50,7 +57,7 @@ class Hydroponics:
             }
     }
     lights_list={0,5,6,11,13,19}
-    addr = 0x7 #arduino nano adress
+    arduino_addr = 0x7 #arduino nano adress
     bus =SMBus(1)
 
     def setup(self):
@@ -131,13 +138,18 @@ class Hydroponics:
             except Exception as error:
                 raise error
 
+    def dosing(self, substance, dose):
+        pump=self.pumps[substance]
+        data=[pump,dose]
+        self.bus.write_block_data(self.arduino_addr,0,data)
+
     def readPH(self):
-        self.bus.write_byte(self.addr,5) # switch to the ph sensor
-        return self.bus.read_byte(self.addr)
+        self.bus.write_byte(self.arduino_addr,5) # switch to the ph sensor
+        return self.bus.read_byte(self.arduino_addr)
     
     def readTDS(self):
-        self.bus.write_byte(self.addr,6) # switch to the tds sensor
-        return self.bus.read_byte(self.addr)
+        self.bus.write_byte(self.arduino_addr,6) # switch to the tds sensor
+        return self.bus.read_byte(self.arduino_addr)
 
     def readLightIntensity(self):
         while True:
