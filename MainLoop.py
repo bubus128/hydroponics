@@ -1,6 +1,7 @@
 import RPi.GPIO as GPIO
 import sys
 import time
+from datetime import datetime
 import adafruit_tsl2591
 import adafruit_dht
 import board
@@ -10,7 +11,14 @@ from smbus import SMBus
 class Hydroponics:
 
     # TODO
-    daily_light_cycle=None
+    daily_light_cycle={
+        'flowering':{
+            'OFF':[21,22,23,0,1,2]
+        },
+        'growth':{
+            'OFF':[21,22,23,0,1,2]
+        }
+    }
     gpi_pins_dict={
         'atomizer':4,
         'cooling':14,
@@ -98,6 +106,13 @@ class Hydroponics:
         
         # DTH11 setup
         self.dht_device = adafruit_dht.DHT11(board.D17)
+
+    def dayCycleControl(self):
+        current_time=datetime.now().hour
+        if current_time in self.daily_light_cycle['OFF']:
+            self.lightControl(0)
+        else:
+            self.lightControl(len(self.lights_list))
 
     def lightControl(self,lights_number=0):
         # Switch on 'light_number' lights
@@ -204,24 +219,16 @@ class Hydroponics:
             self.ventylation(switch=False)
 
     def mainLoop(self):
-       '''
-       TODO:
-       1.Read all sensors indications
-       2.Lights control
-        -set lights based on daily light cycle
-       3.Temperature control 
-        -switch on/off cooling
-       4.Humidity control 
-        -switch on/off atomization
-        -switch on/off ventilation
-       5.Substances dosing
-       6.Make a photo
-       '''
-       self.readPH()
-       self.readTDS()
-       self.readLightIntensity()
-       self.readTemperature()
-       self.readHumidity()
-       self.temperatureControl()
-       self.humidityControl()
-        
+        # 1.Read all sensors indications
+        self.readPH()
+        self.readTDS()
+        self.readLightIntensity()
+        self.readTemperature()
+        self.readHumidity()
+        # 2.Lights control
+        self.dayCycleControl()
+        # 3.Temperature control
+        self.temperatureControl()
+        # 4.Humidity control 
+        self.humidityControl()
+       
