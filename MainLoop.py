@@ -68,7 +68,7 @@ class Hydroponics:
     arduino_addr = 0x7 #arduino nano adress
     bus =SMBus(1)
 
-    def setup(self):
+    def __init__(self):
         GPIO.setmode(GPIO.BCM)
         # Lights 
         for pin in self.lights_list:
@@ -231,4 +231,8 @@ class Hydroponics:
         self.temperatureControl()
         # 4.Humidity control 
         self.humidityControl()
+        # 5.Dosing substances
+        
+if __name__ == "__main__":
+    plantation=Hydroponics()
        
