@@ -11,6 +11,29 @@ from smbus import SMBus
 class Hydroponics:
 
     # TODO
+    log={
+        'timer':None,
+        'day':0,
+        'sensors_indications':None,
+        'phase':'Flowering'
+    }
+    log_file=None
+    modules={
+        '''
+        True -> module enabled
+        False -> module disabled
+        '''
+        'humidity':True,
+        'temperature':True,
+        'PH':True,
+        'TDS':False,
+        'water_level':False
+    }
+    codes={
+        'to_low':1,
+        'to_high':2,
+        'correct':0
+    }
     daily_light_cycle={
         'flowering':{
             'OFF':[21,22,23,0,1,2]
@@ -64,11 +87,12 @@ class Hydroponics:
                 }
             }
     }
-    lights_list={0,5,6,11,13,19}
+    lights_list=[0,5,6,11,13,19]
     arduino_addr = 0x7 #arduino nano adress
     bus =SMBus(1)
 
     def __init__(self):
+        self.log['timer']=datetime.now()
         GPIO.setmode(GPIO.BCM)
         # Lights 
         for pin in self.lights_list:
@@ -102,14 +126,22 @@ class Hydroponics:
         i2c = board.I2C()
         self.tsl2591_sensor = adafruit_tsl2591.TSL2591(i2c)
         adafruit_tsl2591.GAIN_LOW #set gan to low (stron light measuring)
-        adafruit_tsl2591.INTEGRATIONTIME_100MS      
+        adafruit_tsl2591.INTEGRATIONTIME_100MS     
         
         # DTH11 setup
         self.dht_device = adafruit_dht.DHT11(board.D17)
+        
+        self.mainLoop()
+    
+    def nextDay(self):
+        self.log['day']+=1
+        
 
     def dayCycleControl(self):
         current_time=datetime.now().hour
-        if current_time in self.daily_light_cycle['OFF']:
+        if self.log['timer'].hour>current_time:
+            self.nextDay()
+        if current_time in self.daily_light_cycle['flowering']['OFF']:
             self.lightControl(0)
         else:
             self.lightControl(len(self.lights_list))
@@ -117,10 +149,10 @@ class Hydroponics:
     def lightControl(self,lights_number=0):
         # Switch on 'light_number' lights
         for light in range(lights_number):
-            GPIO.output(self.light_list[light], GPIO.HIGH) 
+            GPIO.output(self.lights_list[light], GPIO.HIGH) 
         # Switch off rest of lights
         for light in range(lights_number,len(self.lights_list)):
-            GPIO.output(self.light_list[light], GPIO.LOW)
+            GPIO.output(self.lights_list[light], GPIO.LOW)
 
     def readTemperature(self):
         while(True):
@@ -152,6 +184,12 @@ class Hydroponics:
 
             except Exception as error:
                 raise error
+
+    def phControl(self):
+        self.readPH()
+
+    def tdsControl(self):
+        self.readTDS()
 
     def dosing(self, substance, dose):
         pump=self.pumps[substance]
@@ -200,6 +238,7 @@ class Hydroponics:
             GPIO.output(self.gpi_pins_dict['cooling'], GPIO.HIGH)
 
     def temperatureControl(self):
+        self.readTemperature()
         avg_temp=(self.sensors_indications['temperature1']+self.sensors_indications['temperature2'])/2
         if avg_temp>self.indication_limits['flowering']['temperature']['standard']+self.indication_limits['flowering']['temperature']['hysteresis']:
             self.cooling(switch=True)
@@ -207,6 +246,7 @@ class Hydroponics:
             self.cooling(switch=False)
 
     def humidityControl(self):
+        self.readHumidity()
         avg_hum=(self.sensors_indications['humidity1']+self.sensors_indications['humidity2'])/2
         if avg_hum<self.indication_limits['flowering']['humidity']['standard']-self.indication_limits['flowering']['humidity']['hysteresis']:
             self.atomization(switch=True)
@@ -218,20 +258,35 @@ class Hydroponics:
             self.atomization(switch=False)
             self.ventylation(switch=False)
 
+    def logging(self, error=None, message=None):
+        if message is not None:
+            print(message)
+        else:
+            self.log['timer']=datetime.now()
+            self.log['sensors_indications']=self.sensors_indications
+            if error is None:
+                print(self.log)
+            else:
+                print("----------ERROR----------")
+                print(error)
+                print(self.log)
+                print("----------ERROR----------")
+
     def mainLoop(self):
-        # 1.Read all sensors indications
-        self.readPH()
-        self.readTDS()
-        self.readLightIntensity()
-        self.readTemperature()
-        self.readHumidity()
-        # 2.Lights control
-        self.dayCycleControl()
-        # 3.Temperature control
-        self.temperatureControl()
-        # 4.Humidity control 
-        self.humidityControl()
-        # 5.Dosing substances
+        while(True):
+            if self.modules['temperature']:
+                self.temperatureControl()
+            if self.modules['humidity']:
+                self.humidityControl()
+            if self.modules['PH']:
+                self.phControl()
+            if self.modules['TDS']:
+                self.tdsControl()
+            if self.modules['lights']:
+                self.dayCycleControl()
+            self.logging()
+            time.sleep(1)
+
         
 if __name__ == "__main__":
     plantation=Hydroponics()
