@@ -49,8 +49,8 @@ class Hydroponics:
         'fan':15
     }
     pumps={
-        'ph_plus':1,
-        'ph_minus':2,
+        'ph+':1,
+        'ph-':2,
         'boost':3,
         'fertilizer_A':4,
         'fertilizer_B':5
@@ -193,6 +193,11 @@ class Hydroponics:
 
     def phControl(self):
         self.readPH()
+        ph=self.sensors_indications['ph']
+        if ph>self.indication_limits['flowering']['ph']['standard']+self.indication_limits['flowering']['ph']['hysteresis']:
+            self.dosing(self.pumps['ph-'],1000)
+        elif ph<self.indication_limits['flowering']['ph']['standard']-self.indication_limits['flowering']['ph']['hysteresis']:
+            self.dosing(self.pumps['ph+'],1000)
 
     def tdsControl(self):
         self.readTDS()
