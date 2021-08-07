@@ -18,16 +18,17 @@ class Hydroponics:
         'phase':'Flowering'
     }
     log_file=None
+    '''
+    True -> module enabled
+    False -> module disabled
+    '''
     modules={
-        '''
-        True -> module enabled
-        False -> module disabled
-        '''
-        'humidity':True,
-        'temperature':True,
-        'PH':True,
+        'temperature':False,
+        'humidity':False,
+        'PH':False,
         'TDS':False,
-        'water_level':False
+        'water_level':False,
+        'lights':True
     }
     codes={
         'to_low':1,
@@ -93,6 +94,8 @@ class Hydroponics:
 
     def __init__(self):
         self.log['timer']=datetime.now()
+        self.nextDay()
+
         GPIO.setmode(GPIO.BCM)
         # Lights 
         for pin in self.lights_list:
@@ -135,12 +138,15 @@ class Hydroponics:
     
     def nextDay(self):
         self.log['day']+=1
-        
+        self.log_file='../logs/'
+        self.log_file+=datetime.now().strftime("%d %b %Y ")
+        self.log_file+='.txt'
 
     def dayCycleControl(self):
-        current_time=datetime.now().hour
-        if self.log['timer'].hour>current_time:
+        current_time=datetime.now()
+        if self.log['timer'].hour>current_time.hour:
             self.nextDay()
+        self.log['timer']=current_time
         if current_time in self.daily_light_cycle['flowering']['OFF']:
             self.lightControl(0)
         else:
@@ -259,18 +265,34 @@ class Hydroponics:
             self.ventylation(switch=False)
 
     def logging(self, error=None, message=None):
-        if message is not None:
-            print(message)
-        else:
-            self.log['timer']=datetime.now()
-            self.log['sensors_indications']=self.sensors_indications
-            if error is None:
-                print(self.log)
+        try:
+            log=open(self.log_file,'a')
+            if message is not None:
+                print(message)
+                log.write(message)
             else:
-                print("----------ERROR----------")
-                print(error)
-                print(self.log)
-                print("----------ERROR----------")
+                self.log['timer']=datetime.now()
+                self.log['sensors_indications']=self.sensors_indications
+                if error is None:
+                    for key,value in self.log.items():
+                        print(key, ' : ', value)
+                        log.write('{} : {}\n'.format(key,value))
+                else:
+                    print("----------ERROR----------")
+                    print(error)
+                    print(self.log)
+                    print("----------ERROR----------")
+                    log.write("----------ERROR----------\n")
+                    log.write(error)
+                    log.write('\n')
+                    for key,value in self.log.items():
+                        print(key, ' : ', value)
+                        log.write('{} : {}\n'.format(key,value))
+                    log.write("----------ERROR----------\n")
+            log.write('\n\n')
+            print('\n\n')
+        finally:
+            log.close()
 
     def mainLoop(self):
         while(True):
