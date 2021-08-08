@@ -59,9 +59,9 @@ class Hydroponics:
         'ph':None,
         'tds':None,
         'light':None,
-        'temperature1':None,
+        'temperature':None,
         'temperature2':None,
-        'humidity1':None,
+        'humidity':None,
         'humidity2':None
     }
     indication_limits={
@@ -221,11 +221,15 @@ class Hydroponics:
 
     def readPH(self):
         self.bus.write_byte(self.arduino_addr,5) # switch to the ph sensor
-        return self.bus.read_byte(self.arduino_addr)/10
+        ph=self.bus.read_byte(self.arduino_addr)/10
+        self.sensors_indications['ph']=ph
+        return ph
     
     def readTDS(self):
         self.bus.write_byte(self.arduino_addr,6) # switch to the tds sensor
-        return self.bus.read_byte(self.arduino_addr)/10
+        tds=self.bus.read_byte(self.arduino_addr)/10
+        self.sensors_indications['tds']=tds
+        return tds
 
     def readLightIntensity(self):
         while True:
