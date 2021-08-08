@@ -133,17 +133,27 @@ class Hydroponics:
         
         # DTH11 setup
         self.dht_device = adafruit_dht.DHT11(board.D17)
+
+        #water fill up
         self.logging(message="filling with water")
-        input('fill water and press ENTER')
+        print('pour the water')
+        self.waterFillUp()
         self.logging(message="filling done")
         self.logging(message='setting water ph level')
         while self.phControl()!=self.codes['correct']:
-            time.sleep(1)
+            time.sleep(10)
         self.logging(message='ph level set')
         input("plant strawberries and press ENTER")
         self.logging(message="strawberries planted")
         self.mainLoop()
     
+    def waterFillUp(self):
+        fill=0
+        while fill<100:
+            
+            print("water level: {}%".format(fill))
+            time.sleep(1)
+
     def nextDay(self):
         self.log['day']+=1
         self.log_file='../logs/'
@@ -167,6 +177,16 @@ class Hydroponics:
         # Switch off rest of lights
         for light in range(lights_number,len(self.lights_list)):
             GPIO.output(self.lights_list[light], GPIO.LOW)
+    
+    def readWaterLevel(self):
+        level=0
+        high_block=self.bus.read_i2c_block_data(0x78, 0, 12)
+        low_block=self.bus.read_i2c_block_data(0x77, 0, 8)
+        block=low_block+high_block
+        for i in block:
+            if i>200:
+                level+=5
+        return level
 
     def readTemperature(self):
         while(True):
@@ -203,10 +223,10 @@ class Hydroponics:
         self.readPH()
         ph=self.sensors_indications['ph']
         if ph>self.indication_limits['flowering']['ph']['standard']+self.indication_limits['flowering']['ph']['hysteresis']:
-            self.dosing(self.pumps['ph-'],1000)
+            self.dosing('ph-',1)
             return self.codes['to_high']
         elif ph<self.indication_limits['flowering']['ph']['standard']-self.indication_limits['flowering']['ph']['hysteresis']:
-            self.dosing(self.pumps['ph+'],1000)
+            self.dosing('ph+',1)
             return self.codes['to_low']
         else:
             return self.codes['correct']
