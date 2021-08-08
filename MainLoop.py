@@ -209,11 +209,11 @@ class Hydroponics:
 
     def readPH(self):
         self.bus.write_byte(self.arduino_addr,5) # switch to the ph sensor
-        return self.bus.read_byte(self.arduino_addr)
+        return self.bus.read_byte(self.arduino_addr)/10
     
     def readTDS(self):
         self.bus.write_byte(self.arduino_addr,6) # switch to the tds sensor
-        return self.bus.read_byte(self.arduino_addr)
+        return self.bus.read_byte(self.arduino_addr)/10
 
     def readLightIntensity(self):
         while True:

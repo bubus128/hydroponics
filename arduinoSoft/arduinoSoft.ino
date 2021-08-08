@@ -9,7 +9,7 @@
 int analogBuffer[SCOUNT];    // store the analog value in the array, read from ADC
 int analogBufferTemp[SCOUNT];
 int analogBufferIndex = 0,copyIndex = 0;
-int averageVoltage = 0,tdsValue = 0,temperature = 25;
+float averageVoltage = 0,tdsValue = 0,temperature = 25;
 
 DosingQueue dosing_queue;
 int pins1[4]={2,3,4,5};
@@ -18,7 +18,7 @@ int pins2[4]={6,7,8,9};
 SyringePump phMinusPump (pins2);
 int pins3[4]={10,11,12,13};
 SyringePump costamPump (pins3);
-string sensor="PH";
+String sensor="PH";
 int pomp_buffer[2][30];
 
 void receiveEvent(int byte_count) {
@@ -26,7 +26,7 @@ void receiveEvent(int byte_count) {
     sensor="PH";
   }
   else if(Wire.read()==6){
-    sensor="TDS"
+    sensor="TDS";
   }
   else{
     Wire.read(); //byte_count
@@ -40,16 +40,34 @@ void requestEvent(){
   if(sensor=="TDS"){
     Serial.println("measuring tds");
     int tds=analogRead(TdsSensorPin);
-    int compensationCoefficient=1.0+0.02*(temperature-25.0);    
-    int compensationVolatge=tds/compensationCoefficient;  //temperature compensation
+    float compensationCoefficient=(float)1.0+0.02*(temperature-25.0);    
+    float compensationVolatge=(float)tds/compensationCoefficient;  //temperature compensation
     tdsValue=(133.42*compensationVolatge*compensationVolatge*compensationVolatge - 255.86*compensationVolatge*compensationVolatge + 857.39*compensationVolatge)*0.5; //convert voltage value to tds value
-    Wire.write(tdsValue);
+    Wire.write((int)(tdsValue*10));
   }
   else if(sensor=="PH"){
+    int buf[10],tmp;
     Serial.println("measuring ph");
-    int ph=analogRead(PhSensorPin);
-    int phValue=ph*5.0/1024/6*3.5;
-    Wire.write(phValue);
+    for(int i=0;i<10;i++){       //Get 10 sample value from the sensor for smooth the value 
+      buf[i]=analogRead(PhSensorPin);
+      delay(10);
+    }
+    for(int i=0;i<9;i++){        //sort the analog from small to large
+      for(int j=i+1;j<10;j++){
+        if(buf[i]>buf[j]){
+          tmp=buf[i];
+          buf[i]=buf[j];
+          buf[j]=tmp;
+        }
+      }
+    }
+    int avgValue=0;
+    for(int i=2;i<8;i++)                      //take the average value of 6 center sample
+      avgValue+=buf[i];
+    float phValue=(float)avgValue*5.0/1024/6*3.5; //convert the analog into millivolt
+    int sent_value=(int)10*phValue; 
+    Serial.println(sent_value);                  
+    Wire.write(sent_value);
   }
   else
     Wire.write(10);
