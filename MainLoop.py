@@ -133,7 +133,15 @@ class Hydroponics:
         
         # DTH11 setup
         self.dht_device = adafruit_dht.DHT11(board.D17)
-        
+        self.logging(message="filling with water")
+        input('fill water and press ENTER')
+        self.logging(message="filling done")
+        self.logging(message='setting water ph level')
+        while self.phControl()!=self.codes['correct']:
+            time.sleep(1)
+        self.logging(message='ph level set')
+        input("plant strawberries and press ENTER")
+        self.logging(message="strawberries planted")
         self.mainLoop()
     
     def nextDay(self):
@@ -196,8 +204,12 @@ class Hydroponics:
         ph=self.sensors_indications['ph']
         if ph>self.indication_limits['flowering']['ph']['standard']+self.indication_limits['flowering']['ph']['hysteresis']:
             self.dosing(self.pumps['ph-'],1000)
+            return self.codes['to_high']
         elif ph<self.indication_limits['flowering']['ph']['standard']-self.indication_limits['flowering']['ph']['hysteresis']:
             self.dosing(self.pumps['ph+'],1000)
+            return self.codes['to_low']
+        else:
+            return self.codes['correct']
 
     def tdsControl(self):
         self.readTDS()
