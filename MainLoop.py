@@ -141,7 +141,7 @@ class Hydroponics:
         self.logging(message="filling done")
         self.logging(message='setting water ph level')
         while self.phControl()!=self.codes['correct']:
-            time.sleep(10)
+            time.sleep(30)
         self.logging(message='ph level set')
         input("plant strawberries and press ENTER")
         self.logging(message="strawberries planted")
@@ -224,9 +224,11 @@ class Hydroponics:
         ph=self.sensors_indications['ph']
         if ph>self.indication_limits['flowering']['ph']['standard']+self.indication_limits['flowering']['ph']['hysteresis']:
             self.dosing('ph-',1)
+            self.logging(message="ph: {} to high".format(ph))
             return self.codes['to_high']
         elif ph<self.indication_limits['flowering']['ph']['standard']-self.indication_limits['flowering']['ph']['hysteresis']:
             self.dosing('ph+',1)
+            self.logging(message="ph: {} to low".format(ph))
             return self.codes['to_low']
         else:
             return self.codes['correct']
@@ -310,7 +312,7 @@ class Hydroponics:
             log=open(self.log_file,'a')
             if message is not None:
                 print(message)
-                log.write(message)
+                log.write('log message: {}'.format(message))
             else:
                 self.log['timer']=datetime.now()
                 self.log['sensors_indications']=self.sensors_indications
