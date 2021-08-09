@@ -23,8 +23,8 @@ class Hydroponics:
     False -> module disabled
     '''
     modules={
-        'temperature':False,
-        'humidity':False,
+        'temperature':True,
+        'humidity':True,
         'PH':False,
         'TDS':False,
         'water_level':False,
@@ -88,6 +88,7 @@ class Hydroponics:
                 }
             }
     }
+    water_setup_enabled=False
     lights_list=[0,5,6,11,13,19]
     arduino_addr = 0x7 #arduino nano adress
     bus =SMBus(1)
@@ -133,15 +134,8 @@ class Hydroponics:
         
         # DTH11 setup
         self.dht_device = adafruit_dht.DHT11(board.D17)
-        self.logging(message="filling with water")
-        input('fill water and press ENTER')
-        self.logging(message="filling done")
-        self.logging(message='setting water ph level')
-        while self.phControl()!=self.codes['correct']:
-            time.sleep(1)
-        self.logging(message='ph level set')
-        input("plant strawberries and press ENTER")
-        self.logging(message="strawberries planted")
+        if self.water_setup_enabled:
+            self.waterSetup()
         self.mainLoop()
     
     def nextDay(self):
@@ -149,6 +143,25 @@ class Hydroponics:
         self.log_file='../logs/'
         self.log_file+=datetime.now().strftime("%d %b %Y ")
         self.log_file+='.txt'
+
+    def waterSetup(self):
+        self.logging(message="filling with water")
+        print('pour the water')
+        self.waterFillUp()
+        self.logging(message="filling done")
+        self.logging(message='setting water ph level')
+        while self.phControl()!=self.codes['correct']:
+            time.sleep(30)
+        self.logging(message='ph level set')
+        input("plant strawberries and press ENTER")
+        self.logging(message="strawberries planted")
+        
+    def waterFillUp(self):
+        fill=0
+        while fill<100:
+            fill=self.readWaterLevel()
+            print("water level: {}%".format(fill))
+            time.sleep(1)
 
     def dayCycleControl(self):
         current_time=datetime.now()
@@ -163,15 +176,17 @@ class Hydroponics:
     def lightControl(self,lights_number=0):
         # Switch on 'light_number' lights
         for light in range(lights_number):
-            GPIO.output(self.lights_list[light], GPIO.HIGH) 
+            GPIO.output(self.lights_list[light], GPIO.LOW) 
         # Switch off rest of lights
         for light in range(lights_number,len(self.lights_list)):
-            GPIO.output(self.lights_list[light], GPIO.LOW)
+            GPIO.output(self.lights_list[light], GPIO.HIGH)
 
     def readTemperature(self):
         while(True):
             try:
                 temperature = self.dht_device.temperature
+                if temperature is None:
+                    continue
                 print(f"Temperature: {temperature}")
                 self.sensors_indications['temperature']=temperature
                 return temperature
@@ -188,7 +203,10 @@ class Hydroponics:
         while(True):
             try:
                 humidity = self.dht_device.humidity
+                if humidity is None:
+                    continue
                 print(f"Humidity: {humidity} %")
+                self.sensors_indications['humidity']=humidity
                 return humidity
 
             except RuntimeError as error:
@@ -261,20 +279,20 @@ class Hydroponics:
             GPIO.output(self.gpi_pins_dict['cooling'], GPIO.HIGH)
 
     def temperatureControl(self):
-        self.readTemperature()
-        avg_temp=(self.sensors_indications['temperature1']+self.sensors_indications['temperature2'])/2
-        if avg_temp>self.indication_limits['flowering']['temperature']['standard']+self.indication_limits['flowering']['temperature']['hysteresis']:
+        temperature=self.readTemperature()
+        #avg_temp=(self.sensors_indications['temperature1']+self.sensors_indications['temperature2'])/2
+        if temperature>self.indication_limits['flowering']['temperature']['standard']+self.indication_limits['flowering']['temperature']['hysteresis']:
             self.cooling(switch=True)
         else:
             self.cooling(switch=False)
 
     def humidityControl(self):
-        self.readHumidity()
-        avg_hum=(self.sensors_indications['humidity1']+self.sensors_indications['humidity2'])/2
-        if avg_hum<self.indication_limits['flowering']['humidity']['standard']-self.indication_limits['flowering']['humidity']['hysteresis']:
+        humidity=self.readHumidity()
+        #avg_hum=(self.sensors_indications['humidity1']+self.sensors_indications['humidity2'])/2
+        if humidity<self.indication_limits['flowering']['humidity']['standard']-self.indication_limits['flowering']['humidity']['hysteresis']:
             self.atomization(switch=True)
             self.ventylation(switch=False)
-        elif avg_hum>self.indication_limits['flowering']['humidity']['standard']+self.indication_limits['flowering']['humidity']['hysteresis']:
+        elif humidity>self.indication_limits['flowering']['humidity']['standard']+self.indication_limits['flowering']['humidity']['hysteresis']:
             self.ventylation(switch=True)
             self.atomization(switch=False)
         else :
@@ -324,7 +342,7 @@ class Hydroponics:
             if self.modules['lights']:
                 self.dayCycleControl()
             self.logging()
-            time.sleep(1)
+            time.sleep(10)
 
         
 if __name__ == "__main__":
