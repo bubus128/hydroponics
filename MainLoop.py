@@ -168,7 +168,8 @@ class Hydroponics:
         if self.log['timer'].hour>current_time.hour:
             self.nextDay()
         self.log['timer']=current_time
-        if current_time in self.daily_light_cycle['flowering']['OFF']:
+        current_hour=current_time.hour
+        if current_hour in self.daily_light_cycle['flowering']['OFF']:
             self.lightControl(0)
         else:
             self.lightControl(len(self.lights_list))
