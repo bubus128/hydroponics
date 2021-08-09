@@ -15,7 +15,8 @@ class Hydroponics:
         'timer':None,
         'day':0,
         'sensors_indications':None,
-        'phase':'Flowering'
+        'phase':'Flowering',
+        'day_phase':'day'
     }
     log_file=None
     '''
@@ -37,10 +38,10 @@ class Hydroponics:
     }
     daily_light_cycle={
         'flowering':{
-            'OFF':[21,22,23,0,1,2]
+            'OFF':[21,22,23,0,1,2,3,4]
         },
         'growth':{
-            'OFF':[21,22,23,0,1,2]
+            'OFF':[21,22,23,0,1,2,3,4]
         }
     }
     gpi_pins_dict={
@@ -68,23 +69,29 @@ class Hydroponics:
         'flowering':{
             'ph':{
                 'standard':6.1,
-                "hysteresis":0.2
+                'hysteresis':0.2
                 },
             'tds':{
                 'standard':1050,
-                "hysteresis":200
+                'hysteresis':200
                 },
             'light':{
                 'standard':1,
-                "hysteresis":1
+                'hysteresis':1
                 },
             'temperature':{
-                'standard':25,
-                "hysteresis":3
+                'day':{
+                    'standard':26,
+                    'hysteresis':3
+                },
+                'night':{
+                    'standard':24,
+                    'hysteresis':3
+                }
                 },
             'humidity':{
                 'standard':70,
-                "hysteresis":5
+                'hysteresis':5
                 }
             }
     }
@@ -133,7 +140,8 @@ class Hydroponics:
         adafruit_tsl2591.INTEGRATIONTIME_100MS     
         
         # DTH11 setup
-        self.dht_device = adafruit_dht.DHT11(board.D17)
+        self.dht_devices = [adafruit_dht.DHT11(board.D17),adafruit_dht.DHT11(board.D27)]
+
         if self.water_setup_enabled:
             self.waterSetup()
         self.mainLoop()
@@ -170,8 +178,10 @@ class Hydroponics:
         self.log['timer']=current_time
         current_hour=current_time.hour
         if current_hour in self.daily_light_cycle['flowering']['OFF']:
+            self.log['day_phase']='night'
             self.lightControl(0)
         else:
+            self.log['day_phase']='day'
             self.lightControl(len(self.lights_list))
 
     def lightControl(self,lights_number=0):
@@ -185,9 +195,16 @@ class Hydroponics:
     def readTemperature(self):
         while(True):
             try:
-                temperature = self.dht_device.temperature
-                if temperature is None:
+                temperature = 0
+                tmp_temperature= self.dht_devices[0].temperature
+                if tmp_temperature is None:
                     continue
+                temperature+=tmp_temperature
+                tmp_temperature= self.dht_devices[1].temperature
+                if tmp_temperature is None:
+                    continue
+                temperature+=tmp_temperature
+                temperature/=2
                 print(f"Temperature: {temperature}")
                 self.sensors_indications['temperature']=temperature
                 return temperature
@@ -203,9 +220,16 @@ class Hydroponics:
     def readHumidity(self):
         while(True):
             try:
-                humidity = self.dht_device.humidity
-                if humidity is None:
+                humidity = 0
+                tmp_humidity= self.dht_devices[0].humidity
+                if tmp_humidity is None:
                     continue
+                humidity+=tmp_humidity
+                tmp_humidity= self.dht_devices[1].humidity
+                if tmp_humidity is None:
+                    continue
+                humidity+=tmp_humidity
+                humidity/=2
                 print(f"Humidity: {humidity} %")
                 self.sensors_indications['humidity']=humidity
                 return humidity
@@ -282,7 +306,7 @@ class Hydroponics:
     def temperatureControl(self):
         temperature=self.readTemperature()
         #avg_temp=(self.sensors_indications['temperature1']+self.sensors_indications['temperature2'])/2
-        if temperature>self.indication_limits['flowering']['temperature']['standard']+self.indication_limits['flowering']['temperature']['hysteresis']:
+        if temperature>self.indication_limits['flowering']['temperature'][self.log['day_phase']]['standard']+self.indication_limits['flowering']['temperature'][self.log['day_phase']]['hysteresis']:
             self.cooling(switch=True)
         else:
             self.cooling(switch=False)
