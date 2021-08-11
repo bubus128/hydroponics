@@ -247,9 +247,11 @@ class Hydroponics:
         ph=self.sensors_indications['ph']
         if ph>self.indication_limits['flowering']['ph']['standard']+self.indication_limits['flowering']['ph']['hysteresis']:
             self.dosing(self.pumps['ph-'],1)
+            self.logging(message="dosing ph- (1)")
             return self.codes['to_high']
         elif ph<self.indication_limits['flowering']['ph']['standard']-self.indication_limits['flowering']['ph']['hysteresis']:
             self.dosing(self.pumps['ph+'],1)
+            self.logging(message="dosing ph+ (1)")
             return self.codes['to_low']
         else:
             return self.codes['correct']
