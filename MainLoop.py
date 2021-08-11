@@ -26,7 +26,7 @@ class Hydroponics:
     modules={
         'temperature':True,
         'humidity':True,
-        'PH':False,
+        'PH':True,
         'TDS':False,
         'water_level':False,
         'lights':True
@@ -246,10 +246,10 @@ class Hydroponics:
         self.readPH()
         ph=self.sensors_indications['ph']
         if ph>self.indication_limits['flowering']['ph']['standard']+self.indication_limits['flowering']['ph']['hysteresis']:
-            self.dosing(self.pumps['ph-'],1000)
+            self.dosing(self.pumps['ph-'],1)
             return self.codes['to_high']
         elif ph<self.indication_limits['flowering']['ph']['standard']-self.indication_limits['flowering']['ph']['hysteresis']:
-            self.dosing(self.pumps['ph+'],1000)
+            self.dosing(self.pumps['ph+'],1)
             return self.codes['to_low']
         else:
             return self.codes['correct']
@@ -264,7 +264,9 @@ class Hydroponics:
 
     def readPH(self):
         self.bus.write_byte(self.arduino_addr,5) # switch to the ph sensor
-        return self.bus.read_byte(self.arduino_addr)/10
+        ph=self.bus.read_byte(self.arduino_addr)/10
+        self.sensors_indications['ph']=ph
+        return ph
     
     def readTDS(self):
         self.bus.write_byte(self.arduino_addr,6) # switch to the tds sensor
@@ -308,21 +310,25 @@ class Hydroponics:
         #avg_temp=(self.sensors_indications['temperature1']+self.sensors_indications['temperature2'])/2
         if temperature>self.indication_limits['flowering']['temperature'][self.log['day_phase']]['standard']+self.indication_limits['flowering']['temperature'][self.log['day_phase']]['hysteresis']:
             self.cooling(switch=True)
-        else:
+            self.ventylation(switch=True)
+        elif temperature<=self.indication_limits['flowering']['temperature'][self.log['day_phase']]['standard']:
             self.cooling(switch=False)
+            self.ventylation(switch=False)
+        else:
+            self.ventylation(switch=False)
 
     def humidityControl(self):
         humidity=self.readHumidity()
         #avg_hum=(self.sensors_indications['humidity1']+self.sensors_indications['humidity2'])/2
         if humidity<self.indication_limits['flowering']['humidity']['standard']-self.indication_limits['flowering']['humidity']['hysteresis']:
             self.atomization(switch=True)
-            self.ventylation(switch=False)
+            #self.ventylation(switch=False)
         elif humidity>self.indication_limits['flowering']['humidity']['standard']+self.indication_limits['flowering']['humidity']['hysteresis']:
             self.ventylation(switch=True)
             self.atomization(switch=False)
         else :
             self.atomization(switch=False)
-            self.ventylation(switch=False)
+            #self.ventylation(switch=False)
 
     def logging(self, error=None, message=None):
         try:
