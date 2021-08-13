@@ -233,15 +233,28 @@ class Hydroponics:
             except Exception as error:
                 raise error
 
+    def getPh(self):
+        ph_tab=self.sensors_indications['ph']
+        ph=0
+        weight=0
+        for w in range(len(ph_tab)):
+            ph+=ph_tab[w]*(w+1)
+            weight+=w+1
+        return ph/weight
+
     def phControl(self):
-        self.readPH()
-        ph=self.sensors_indications['ph']
+        act_ph=self.readPH()
+        if act_ph<self.indication_limits['flowering']['ph']['standard']+self.indication_limits['flowering']['ph']['hysteresis'] and act_ph>self.indication_limits['flowering']['ph']['standard']-self.indication_limits['flowering']['ph']['hysteresis']:
+            return self.codes['correct']
+            self.sensors_indications['ph']=[6.1,6.1,6.1,6.1,6.1,6.1,6.1,6.1,6.1,6.1]
+        ph=self.getPh()
+        self.logging("ph={}".format(ph))
         if ph>self.indication_limits['flowering']['ph']['standard']+self.indication_limits['flowering']['ph']['hysteresis']:
-            self.dosing(self.pumps['ph-'],1)
+            self.dosing('ph-',1)
             self.logging(message="dosing ph- (1)")
             return self.codes['to_high']
         elif ph<self.indication_limits['flowering']['ph']['standard']-self.indication_limits['flowering']['ph']['hysteresis']:
-            self.dosing(self.pumps['ph+'],1)
+            self.dosing('ph+',1)
             self.logging(message="dosing ph+ (1)")
             return self.codes['to_low']
         else:
