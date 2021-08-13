@@ -271,7 +271,10 @@ class Hydroponics:
     def readPH(self):
         self.bus.write_byte(self.arduino_addr,5) # switch to the ph sensor
         ph=self.bus.read_byte(self.arduino_addr)/10
-        self.sensors_indications['ph']=ph
+        ph_tab=self.sensors_indications['ph']
+        for i in range (len(ph_tab)-1):
+            ph_tab[i]=ph_tab[i+1]
+        ph_tab[len(ph_tab)-1]=ph
         return ph
     
     def readTDS(self):
