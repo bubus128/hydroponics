@@ -378,13 +378,18 @@ class Hydroponics:
             log.close()
 
     def mainLoop(self):
+        ph_delay=0
         while(True):
             if self.modules['temperature']:
                 self.temperatureControl()
             if self.modules['humidity']:
                 self.humidityControl()
             if self.modules['PH']:
-                self.phControl()
+                if ph_delay==0:
+                    if self.phControl()!=self.codes['correct']:
+                        ph_delay=20
+                else:
+                    ph_delay-=1
             if self.modules['TDS']:
                 self.tdsControl()
             if self.modules['lights']:
