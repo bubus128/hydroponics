@@ -14,7 +14,6 @@ class Hydroponics:
     log={
         'timer':None,
         'day':0,
-        'sensors_indications':None,
         'phase':'Flowering',
         'day_phase':'day'
     }
@@ -57,13 +56,11 @@ class Hydroponics:
         'fertilizer_B':5
     }
     sensors_indications={
-        'ph':None,
+        'ph':[6.1,6.1,6.1,6.1,6.1,6.1,6.1,6.1,6.1,6.1],
         'tds':None,
         'light':None,
-        'temperature1':None,
-        'temperature2':None,
-        'humidity1':None,
-        'humidity2':None
+        'temperature':None,
+        'humidity':None
     }
     indication_limits={
         'flowering':{
@@ -340,23 +337,31 @@ class Hydroponics:
                 log.write(message)
             else:
                 self.log['timer']=datetime.now()
-                self.log['sensors_indications']=self.sensors_indications
                 if error is None:
                     for key,value in self.log.items():
+                        print(key, ' : ', value)
+                        log.write('{} : {}\n'.format(key,value))
+                    print("sensors indications:")
+                    log.write("sensors indications:")
+                    for key,value in self.sensors_indications.items():
+                        if key=='ph':
+                            value=self.getPh()
                         print(key, ' : ', value)
                         log.write('{} : {}\n'.format(key,value))
                 else:
                     print("----------ERROR----------")
                     print(error)
-                    print(self.log)
                     print("----------ERROR----------")
+                    print(self.log)
                     log.write("----------ERROR----------\n")
                     log.write(error)
+                    log.write("----------ERROR----------\n")
                     log.write('\n')
                     for key,value in self.log.items():
+                        if key=='ph':
+                            value=self.getPh()
                         print(key, ' : ', value)
-                        log.write('{} : {}\n'.format(key,value))
-                    log.write("----------ERROR----------\n")
+                        log.write('{} : {}\n'.format(key,value))              
             log.write('\n\n')
             print('\n\n')
         finally:
