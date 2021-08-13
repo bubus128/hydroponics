@@ -192,16 +192,13 @@ class Hydroponics:
     def readTemperature(self):
         while(True):
             try:
-                temperature = 0
-                tmp_temperature= self.dht_devices[0].temperature
-                if tmp_temperature is None:
+                tmp_temperature1= self.dht_devices[0].temperature
+                if tmp_temperature1 is None:
                     continue
-                temperature+=tmp_temperature
-                tmp_temperature= self.dht_devices[1].temperature
-                if tmp_temperature is None:
+                tmp_temperature2= self.dht_devices[1].temperature
+                if tmp_temperature2 is None:
                     continue
-                temperature+=tmp_temperature
-                temperature/=2
+                temperature=(tmp_temperature1+tmp_temperature2)/2
                 print(f"Temperature: {temperature}")
                 self.sensors_indications['temperature']=temperature
                 return temperature
@@ -217,16 +214,13 @@ class Hydroponics:
     def readHumidity(self):
         while(True):
             try:
-                humidity = 0
-                tmp_humidity= self.dht_devices[0].humidity
-                if tmp_humidity is None:
+                tmp_humidity1= self.dht_devices[0].humidity
+                if tmp_humidity1 is None:
                     continue
-                humidity+=tmp_humidity
-                tmp_humidity= self.dht_devices[1].humidity
-                if tmp_humidity is None:
+                tmp_humidity2= self.dht_devices[1].humidity
+                if tmp_humidity2 is None:
                     continue
-                humidity+=tmp_humidity
-                humidity/=2
+                humidity=(tmp_humidity1+tmp_humidity2)/2
                 print(f"Humidity: {humidity} %")
                 self.sensors_indications['humidity']=humidity
                 return humidity
