@@ -23,5 +23,6 @@ class SyringePump:Pump{
   public:
   SyringePump(int pins[4]);
   void dosing(int dose);
+  void refile(int dose);
 };
 #endif
