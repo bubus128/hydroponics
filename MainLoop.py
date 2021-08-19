@@ -56,7 +56,7 @@ class Hydroponics:
         'fertilizer_B':5
     }
     sensors_indications={
-        'ph':[6.1,6.1,6.1,6.1,6.1,6.1,6.1,6.1,6.1,6.1],
+        'ph':None,
         'tds':None,
         'light':None,
         'temperature':None,
@@ -84,7 +84,7 @@ class Hydroponics:
                 'night':{
                     'standard':24,
                     'hysteresis':3
-                }
+                    }
                 },
             'humidity':{
                 'standard':70,
@@ -235,15 +235,6 @@ class Hydroponics:
                 self.logging(error=error)
                 continue
 
-    def getPh(self):
-        ph_tab=self.sensors_indications['ph']
-        ph=0
-        weight=0
-        for w in range(len(ph_tab)):
-            ph+=ph_tab[w]*(w+1)
-            weight+=w+1
-        return ph/weight
-
     def phControl(self):
         act_ph=self.readPH()
         if act_ph<self.indication_limits['flowering']['ph']['standard']+self.indication_limits['flowering']['ph']['hysteresis'] and act_ph>self.indication_limits['flowering']['ph']['standard']-self.indication_limits['flowering']['ph']['hysteresis']:
@@ -272,11 +263,15 @@ class Hydroponics:
 
     def readPH(self):
         self.bus.write_byte(self.arduino_addr,5) # switch to the ph sensor
-        ph=self.bus.read_byte(self.arduino_addr)/10
-        ph_tab=self.sensors_indications['ph']
-        for i in range (len(ph_tab)-1):
-            ph_tab[i]=ph_tab[i+1]
-        ph_tab[len(ph_tab)-1]=ph
+        ph_reads=[]
+        for i in range(20):
+            ph=self.bus.read_byte(self.arduino_addr)/10
+            ph_reads.append(ph)
+            time.sleep(0.05)
+        ph_reads.sort()
+        ph_reads=ph_reads[5:15]
+        ph=sum(ph_reads)/len(ph_reads)
+        self.sensors_indications['ph']=ph
         return ph
     
     def readTDS(self):
