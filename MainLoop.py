@@ -133,7 +133,7 @@ class Hydroponics:
         # TSL2591 setup
         i2c = board.I2C()
         self.tsl2591_sensor = adafruit_tsl2591.TSL2591(i2c)
-        adafruit_tsl2591.GAIN_LOW #set gan to low (stron light measuring)
+        adafruit_tsl2591.GAIN_LOW #set gain to low (stron light measuring)
         adafruit_tsl2591.INTEGRATIONTIME_100MS     
         
         # DTH11 setup
@@ -209,7 +209,8 @@ class Hydroponics:
                 continue
 
             except Exception as error:
-                raise error
+                self.logging(error=error)
+                continue
 
     def readHumidity(self):
         while(True):
@@ -231,7 +232,8 @@ class Hydroponics:
                 continue
 
             except Exception as error:
-                raise error
+                self.logging(error=error)
+                continue
 
     def getPh(self):
         ph_tab=self.sensors_indications['ph']
@@ -245,8 +247,8 @@ class Hydroponics:
     def phControl(self):
         act_ph=self.readPH()
         if act_ph<self.indication_limits['flowering']['ph']['standard']+self.indication_limits['flowering']['ph']['hysteresis'] and act_ph>self.indication_limits['flowering']['ph']['standard']-self.indication_limits['flowering']['ph']['hysteresis']:
-            return self.codes['correct']
             self.sensors_indications['ph']=[6.1,6.1,6.1,6.1,6.1,6.1,6.1,6.1,6.1,6.1]
+            return self.codes['correct']
         ph=self.getPh()
         self.logging("ph={}".format(ph))
         if ph>self.indication_limits['flowering']['ph']['standard']+self.indication_limits['flowering']['ph']['hysteresis']:
@@ -294,7 +296,8 @@ class Hydroponics:
                 continue
 
             except Exception as error:
-                raise error
+                self.logging(error=error)
+                continue
 
     def atomization(self,switch):
         if switch:
