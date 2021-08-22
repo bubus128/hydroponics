@@ -235,12 +235,8 @@ class Hydroponics:
                 self.logging(error=error)
                 continue
 
-    def phControl(self):
-        act_ph=self.readPH()
-        if act_ph<self.indication_limits['flowering']['ph']['standard']+self.indication_limits['flowering']['ph']['hysteresis'] and act_ph>self.indication_limits['flowering']['ph']['standard']-self.indication_limits['flowering']['ph']['hysteresis']:
-            self.sensors_indications['ph']=[6.1,6.1,6.1,6.1,6.1,6.1,6.1,6.1,6.1,6.1]
-            return self.codes['correct']
-        ph=self.getPh()
+    def phControl(self): 
+        ph=self.readPH()
         self.logging("ph={}".format(ph))
         if ph>self.indication_limits['flowering']['ph']['standard']+self.indication_limits['flowering']['ph']['hysteresis']:
             self.dosing('ph-',1)
@@ -265,8 +261,7 @@ class Hydroponics:
         self.bus.write_byte(self.arduino_addr,5) # switch to the ph sensor
         ph_reads=[]
         for i in range(20):
-            ph=self.bus.read_byte(self.arduino_addr)/10
-            ph_reads.append(ph)
+            ph_reads.append(self.bus.read_byte(self.arduino_addr)/10)
             time.sleep(0.05)
         ph_reads.sort()
         ph_reads=ph_reads[5:15]

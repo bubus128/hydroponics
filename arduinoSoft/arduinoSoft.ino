@@ -48,13 +48,13 @@ void requestEvent(){
     float compensationCoefficient=(float)1.0+0.02*(temperature-25.0);    
     float compensationVolatge=(float)tds/compensationCoefficient;  //temperature compensation
     tdsValue=(133.42*compensationVolatge*compensationVolatge*compensationVolatge - 255.86*compensationVolatge*compensationVolatge + 857.39*compensationVolatge)*0.5; //convert voltage value to tds value
-    Wire.write((int)(tdsValue*10));
+    Wire.write((int)round(tdsValue*10));
   }
   else if(sensor=="PH"){
     Serial.println("measuring ph");
     float ph_measure=analogRead(PhSensorPin);
-    float phValue=(float)ph_measure*5.0/1024/3.5; //convert the analog into ph
-    int sent_value=(int)10*phValue; 
+    float phValue=(float)ph_measure*5.0*3.5/1024; //convert the analog into ph
+    int sent_value=(int)round(10*phValue); 
     Serial.println(sent_value);                  
     Wire.write(sent_value);
   }
