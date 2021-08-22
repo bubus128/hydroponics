@@ -271,7 +271,15 @@ class Hydroponics:
     
     def readTDS(self):
         self.bus.write_byte(self.arduino_addr,6) # switch to the tds sensor
-        return self.bus.read_byte(self.arduino_addr)/10
+        tds_reads=[]
+        for i in range(20):
+            tds_reads.append(self.bus.read_byte(self.arduino_addr)/10)
+            time.sleep(0.05)
+        tds_reads.sort()
+        tds_reads=tds_reads[5:15]
+        tds=sum(tds_reads)/len(tds_reads)
+        self.sensors_indications['tds']=tds
+        return tds
 
     def readLightIntensity(self):
         while True:
