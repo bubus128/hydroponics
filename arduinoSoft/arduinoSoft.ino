@@ -39,8 +39,8 @@ void receiveEvent(int byte_count) {
     
     dosing_queue.add(pump,dose);
   }
-  
 }
+
 void requestEvent(){
   if(sensor=="TDS"){
     Serial.println("measuring tds");
@@ -48,29 +48,13 @@ void requestEvent(){
     float compensationCoefficient=(float)1.0+0.02*(temperature-25.0);    
     float compensationVolatge=(float)tds/compensationCoefficient;  //temperature compensation
     tdsValue=(133.42*compensationVolatge*compensationVolatge*compensationVolatge - 255.86*compensationVolatge*compensationVolatge + 857.39*compensationVolatge)*0.5; //convert voltage value to tds value
-    Wire.write((int)(tdsValue*10));
+    Wire.write((int)round(tdsValue*10));
   }
   else if(sensor=="PH"){
-    int buf[10],tmp;
     Serial.println("measuring ph");
-    for(int i=0;i<10;i++){       //Get 10 sample value from the sensor for smooth the value 
-      buf[i]=analogRead(PhSensorPin);
-      delay(10);
-    }
-    for(int i=0;i<9;i++){        //sort the analog from small to large
-      for(int j=i+1;j<10;j++){
-        if(buf[i]>buf[j]){
-          tmp=buf[i];
-          buf[i]=buf[j];
-          buf[j]=tmp;
-        }
-      }
-    }
-    int avgValue=0;
-    for(int i=2;i<8;i++)                      //take the average value of 6 center sample
-      avgValue+=buf[i];
-    float phValue=(float)avgValue*5.0/1024/6*3.5; //convert the analog into millivolt
-    int sent_value=(int)10*phValue; 
+    float ph_measure=analogRead(PhSensorPin);
+    float phValue=(float)ph_measure*5.0*3.5/1024; //convert the analog into ph
+    int sent_value=(int)round(10*phValue); 
     Serial.println(sent_value);                  
     Wire.write(sent_value);
   }
