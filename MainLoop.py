@@ -273,7 +273,9 @@ class Hydroponics:
         self.bus.write_byte(self.arduino_addr,6) # switch to the tds sensor
         tds_reads=[]
         for i in range(20):
-            tds_reads.append(self.bus.read_byte(self.arduino_addr)/10)
+            tds_read=self.bus.read_byte(self.arduino_addr)*2**8 # read high half of tds value and shift by 8
+            tds_read+=self.bus.read_byte(self.arduino_addr)     # read and add low half of tds value
+            tds_reads.append(tds_read)
             time.sleep(0.05)
         tds_reads.sort()
         tds_reads=tds_reads[5:15]
