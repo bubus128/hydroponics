@@ -4,13 +4,8 @@
 #define TdsSensorPin A2
 #define PhSensorPin A3
 #define VREF 5.0      // analog reference voltage(Volt) of the ADC
-#define SCOUNT  30           // sum of sample point
 
-int analogBuffer[SCOUNT];    // store the analog value in the array, read from ADC
-int analogBufferTemp[SCOUNT];
-int analogBufferIndex = 0,copyIndex = 0;
-float averageVoltage = 0,tdsValue = 0,temperature = 25;
-
+float temperature = 25;
 DosingQueue dosing_queue;
 int pins1[4]={6,7,8,9};
 SyringePump phPlusPump(pins1);
@@ -20,6 +15,7 @@ int pins3[4]={10,11,12,13};
 SyringePump costamPump (pins3);
 String sensor="PH";
 int pomp_buffer[2][30];
+int tds=0;
 
 void receiveEvent(int byte_count) {
   int data=Wire.read();
@@ -28,6 +24,12 @@ void receiveEvent(int byte_count) {
   }
   else if(data==6){
     sensor="TDS";
+    float voltage=VREF*(float)analogRead(TdsSensorPin)/1024;
+    float compensationCoefficient=(float)1.0+0.02*(temperature-25.0);    
+    float compensationVolatge=(float)voltage/compensationCoefficient;  //temperature compensation
+    float tdsValue=(133.42*compensationVolatge*compensationVolatge*compensationVolatge - 255.86*compensationVolatge*compensationVolatge + 857.39*compensationVolatge)*0.5; //convert voltage value to tds value
+    tds=(int)round(tdsValue);
+    Serial.println(tds);
   }
   else{
     Wire.read();
@@ -36,28 +38,19 @@ void receiveEvent(int byte_count) {
     Serial.println("dosing");
     Serial.println(pump);
     Serial.println(dose);
-    
     dosing_queue.add(pump,dose);
   }
 }
 
 void requestEvent(){
   if(sensor=="TDS"){
-    Serial.println("measuring tds");
-    int tds=analogRead(TdsSensorPin);
-    float compensationCoefficient=(float)1.0+0.02*(temperature-25.0);    
-    float compensationVolatge=(float)tds/compensationCoefficient;  //temperature compensation
-    tdsValue=(133.42*compensationVolatge*compensationVolatge*compensationVolatge - 255.86*compensationVolatge*compensationVolatge + 857.39*compensationVolatge)*0.5; //convert voltage value to tds value
-    tds=(int)round(tdsValue);
-    byte tds_high = tds;
-    byte tds_low = tds >> 8;
-    Wire.write(tds_high);
-    Wire.write(tds_low);
+    Wire.write(tds);
+    tds=tds>>8;
   }
   else if(sensor=="PH"){
     Serial.println("measuring ph");
     float ph_measure=analogRead(PhSensorPin);
-    float phValue=(float)ph_measure*5.0*3.5/1024; //convert the analog into ph
+    float phValue=(float)ph_measure*VREF*3.5/1024; //convert the analog into ph
     int sent_value=(int)round(10*phValue); 
     Serial.println(sent_value);                  
     Wire.write(sent_value);
