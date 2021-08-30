@@ -11,6 +11,9 @@ from smbus import SMBus
 class Hydroponics:
 
     # TODO
+    costs={
+        'fertilizer_time_per_dose': 0.2
+    }
     log={
         'timer':None,
         'day':0,
@@ -52,8 +55,8 @@ class Hydroponics:
         'ph+':1,
         'ph-':2,
         'boost':3,
-        'fertilizer_A':4,
-        'fertilizer_B':5
+        'fertilizer_A':18,
+        'fertilizer_B':23
     }
     sensors_indications={
         'ph':None,
@@ -119,16 +122,20 @@ class Hydroponics:
         GPIO.setup(self.gpi_pins_dict['fan'], GPIO.OUT)
         GPIO.output(self.gpi_pins_dict['fan'], GPIO.HIGH) #Off
 
+        # Fertilizer pumps 
+        GPIO.setup(self.pumps['fertilizer_A'], GPIO.OUT)
+        GPIO.setup(self.pumps['fertilizer_B'], GPIO.OUT)
+        GPIO.output(self.pumps['fertilizer_A'], GPIO.HIGH)
+        GPIO.output(self.pumps['fertilizer_B'], GPIO.HIGH)  
+
         # Relay (unlocated)
         GPIO.setup(9, GPIO.OUT)
         GPIO.setup(10, GPIO.OUT)
-        GPIO.setup(18, GPIO.OUT)
-        GPIO.setup(23, GPIO.OUT)
+        
         # Off
         GPIO.output(9, GPIO.HIGH)
         GPIO.output(10, GPIO.HIGH)
-        GPIO.output(18, GPIO.HIGH)
-        GPIO.output(23, GPIO.HIGH)  
+        
 
         # TSL2591 setup
         i2c = board.I2C()
@@ -250,12 +257,31 @@ class Hydroponics:
             return self.codes['correct']
 
     def tdsControl(self):
-        self.readTDS()
+        tds=self.readTDS()
+        self.logging("tds={}".format(tds))
+        if tds<self.indication_limits['flowering']['tds']['standard']-self.indication_limits['flowering']['tds']['hysteresis']:
+            self.fertilizerDosing(tds)
+            return self.codes['to_low']
+        else:
+            return self.codes['correct']
 
     def dosing(self, substance, dose):
         pump=self.pumps[substance]
         data=[pump,dose]
         self.bus.write_block_data(self.arduino_addr,0,data)
+
+    def fertilizerDoseCalculation(self, tds):
+        pass
+
+    def fertilizerDosing(self,tds):
+        dose=self.fertilizerDoseCalculation(tds)
+        delay=self.consts['fertilizer_time_per_dose']*dose
+        self.logging(message="dosing {}ml of fertilizer")
+        GPIO.output(self.pumps['fertilizer_A'], GPIO.LOW)
+        GPIO.output(self.pumps['fertilizer_B'], GPIO.LOW)
+        time.sleep(delay)
+        GPIO.output(self.pumps['fertilizer_A'], GPIO.HIGH)
+        GPIO.output(self.pumps['fertilizer_B'], GPIO.HIGH)
 
     def readPH(self):
         self.bus.write_byte(self.arduino_addr,5) # switch to the ph sensor
