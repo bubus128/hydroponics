@@ -11,8 +11,11 @@ from smbus import SMBus
 class Hydroponics:
 
     # TODO
-    costs={
-        'fertilizer_time_per_dose': 0.2
+    consts={
+        'fertilizer_ml_per_second': 1.83,
+        'loop_delay': 10,
+        'fertilizer_delay': 60,
+        'ph_delay': 120
     }
     log={
         'timer':None,
@@ -40,10 +43,12 @@ class Hydroponics:
     }
     daily_light_cycle={
         'flowering':{
-            'OFF':[21,22,23,0,1,2,3,4]
+            'ON':6,
+            'OFF':18
         },
         'growth':{
-            'OFF':[21,22,23,0,1,2,3,4]
+            'ON':3,
+            'OFF':21
         }
     }
     gpi_pins_dict={
@@ -181,7 +186,7 @@ class Hydroponics:
             self.nextDay()
         self.log['timer']=current_time
         current_hour=current_time.hour
-        if current_hour in self.daily_light_cycle['flowering']['OFF']:
+        if self.daily_light_cycle['flowering']['ON'] <= current_hour < self.daily_light_cycle['flowering']['OFF']:
             self.log['day_phase']='night'
             self.lightControl(0)
         else:
@@ -275,7 +280,7 @@ class Hydroponics:
 
     def fertilizerDosing(self,tds):
         dose=self.fertilizerDoseCalculation(tds)
-        delay=self.consts['fertilizer_time_per_dose']*dose
+        delay=dose/self.consts['fertilizer_ml_per_second']
         self.logging(message="dosing {}ml of fertilizer")
         GPIO.output(self.pumps['fertilizer_A'], GPIO.LOW)
         GPIO.output(self.pumps['fertilizer_B'], GPIO.LOW)
@@ -409,6 +414,7 @@ class Hydroponics:
 
     def mainLoop(self):
         ph_delay=0
+        fertilizer_delay=0
         while(True):
             if self.modules['temperature']:
                 self.temperatureControl()
@@ -417,15 +423,20 @@ class Hydroponics:
             if self.modules['PH']:
                 if ph_delay==0:
                     if self.phControl()!=self.codes['correct']:
-                        ph_delay=20
+                        ph_delay=self.consts['ph_delay']
                 else:
-                    ph_delay-=1
+                    ph_delay-=self.consts['loop_delay']
+                    fertilizer_delay
             if self.modules['TDS']:
-                self.tdsControl()
+                if fertilizer_delay==0:
+                    if self.tdsControl()!=self.codes['correct']:
+                        fertilizer_delay=self.consts['fertilizer_delay']
+                else:
+                    fertilizer_delay-=self.consts['loop_delay']
             if self.modules['lights']:
                 self.dayCycleControl()
             self.logging()
-            time.sleep(10)
+            time.sleep(self.consts['loop_delay'])
 
         
 if __name__ == "__main__":
