@@ -110,6 +110,7 @@ class Hydroponics:
         self.nextDay()
 
         GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
         # Lights 
         for pin in self.lights_list:
             GPIO.setup(pin, GPIO.OUT)
@@ -390,7 +391,7 @@ class Hydroponics:
                     log.write("sensors indications:")
                     for key,value in self.sensors_indications.items():
                         if key=='ph':
-                            value=self.getPh()
+                            value=self.sensors_indications['ph']
                         print(key, ' : ', value)
                         log.write('{} : {}\n'.format(key,value))
                 else:
@@ -404,7 +405,7 @@ class Hydroponics:
                     log.write('\n')
                     for key,value in self.log.items():
                         if key=='ph':
-                            value=self.getPh()
+                            value=self.sensors_indications['ph']
                         print(key, ' : ', value)
                         log.write('{} : {}\n'.format(key,value))              
             log.write('\n\n')
