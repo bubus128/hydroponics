@@ -234,8 +234,8 @@ class Hydroponics:
                 time.sleep(1.5)
                 continue
 
-            except Exception as error:
-                self.logging(error=error)
+            except Exception as e:
+                self.logging(error=e)
                 continue
 
     def readHumidity(self):
