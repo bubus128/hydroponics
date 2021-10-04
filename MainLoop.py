@@ -15,7 +15,8 @@ class Hydroponics:
         'fertilizer_ml_per_second': 1.83,
         'loop_delay': 10,
         'fertilizer_delay': 60,
-        'ph_delay': 120
+        'ph_delay': 120,
+        'exceptions_attemptions_count': 10
     }
     log={
         'timer':None,
@@ -34,7 +35,8 @@ class Hydroponics:
         'PH':True,
         'TDS':False,
         'water_level':False,
-        'lights':True
+        'lights':True,
+        'tsl':True
     }
     codes={
         'to_low':1,
@@ -144,10 +146,7 @@ class Hydroponics:
         
 
         # TSL2591 setup
-        i2c = board.I2C()
-        self.tsl2591_sensor = adafruit_tsl2591.TSL2591(i2c)
-        adafruit_tsl2591.GAIN_LOW #set gain to low (stron light measuring)
-        adafruit_tsl2591.INTEGRATIONTIME_100MS     
+        self.tsl2591Setup()
         
         # DTH11 setup
         self.dht_devices = [adafruit_dht.DHT11(board.D17),adafruit_dht.DHT11(board.D27)]
@@ -156,6 +155,21 @@ class Hydroponics:
             self.waterSetup()
         self.mainLoop()
     
+    def tsl2591Setup(self,attempt=0):
+        try:
+            i2c = board.I2C()
+            self.tsl2591_sensor = adafruit_tsl2591.TSL2591(i2c)
+            adafruit_tsl2591.GAIN_LOW #set gain to low (stron light measuring)
+            adafruit_tsl2591.INTEGRATIONTIME_100MS 
+        except Exception as e:
+            print(e)
+            attempt+=1
+            if attempt<self.consts['exceptions_attemptions_count']:
+                self.tsl2591Setup(attempt)
+            else:
+                self.modules['tsl']=False
+
+
     def nextDay(self):
         self.log['day']+=1
         self.log_file='../logs/'
