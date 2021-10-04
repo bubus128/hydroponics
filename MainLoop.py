@@ -102,7 +102,6 @@ class Hydroponics:
                 }
             }
     }
-    water_setup_enabled=False
     lights_list=[0,5,6,11,13,19]
     arduino_addr = 0x7 #arduino nano adress
     bus =SMBus(1)
@@ -151,8 +150,7 @@ class Hydroponics:
         # DTH11 setup
         self.dht_devices = [adafruit_dht.DHT11(board.D17),adafruit_dht.DHT11(board.D27)]
 
-        if self.water_setup_enabled:
-            self.waterSetup()
+        self.waterSetup()
         self.mainLoop()
     
     def tsl2591Setup(self,attempt=0):
@@ -178,17 +176,18 @@ class Hydroponics:
 
     def waterSetup(self):
         self.logging(message="filling with water")
-        print('pour the water')
-        self.waterFillUp()
+        input('pour the water and press ENTER')
+        # self.waterFillUp()
         self.logging(message="filling done")
         self.logging(message='setting water ph level')
         while self.phControl()!=self.codes['correct']:
-            time.sleep(30)
+            time.sleep(self.consts['ph_delay'])
         self.logging(message='ph level set')
         input("plant strawberries and press ENTER")
         self.logging(message="strawberries planted")
         
     def waterFillUp(self):
+        # not uset at the moment (water level sensor broken)
         fill=0
         while fill<100:
             fill=self.readWaterLevel()
