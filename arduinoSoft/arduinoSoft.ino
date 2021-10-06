@@ -10,12 +10,13 @@ DosingQueue dosing_queue;
 int pins1[4]={6,7,8,9};
 SyringePump phPlusPump(pins1);
 int pins2[4]={2,3,4,5};
-SyringePump phMinusPump (pins2);
+SyringePump phMinusPump(pins2);
 int pins3[4]={10,11,12,13};
 SyringePump costamPump (pins3);
 String sensor="PH";
 int pomp_buffer[2][30];
 int tds=0;
+int rotetes_per_ml=658;
 
 void receiveEvent(int byte_count) {
   int data=Wire.read();
@@ -34,10 +35,15 @@ void receiveEvent(int byte_count) {
   else{
     Wire.read();
     int pump = Wire.read();
-    int dose = 1000*Wire.read();
+    int dose = rotetes_per_ml*Wire.read();
     Serial.println("dosing");
     Serial.println(pump);
     Serial.println(dose);
+    if(pump>3)
+    {
+      pump-=3;
+      dose*=-1;      
+    }
     dosing_queue.add(pump,dose);
   }
 }
@@ -69,18 +75,20 @@ void setup() {
 
 void dosingActions(){
   while(!dosing_queue.is_empty()){
-    int* dosing_action=dosing_queue.get_next();
+    int tab[2];
+    if(dosing_queue.get_next(tab)==NULL){
+      break;
+    }
     Serial.println("dosing");
-    Serial.println(*dosing_action+" "+*(dosing_action+1));
-    if(*dosing_action==1){
-      int dose=*(dosing_action+1);
+    if(tab[0]==1){
+      int dose=tab[1];
       if(dose>0)
          phPlusPump.dosing(dose);
       else if(dose<0)
          phPlusPump.refile(dose*(-1));
     }
-    else if(*dosing_action==2){
-      int dose=*(dosing_action+1);
+    else if(tab[0]==2){
+      int dose=tab[1];
       if(dose>0)
          phMinusPump.dosing(dose);
       else if(dose<0)

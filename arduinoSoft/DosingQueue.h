@@ -12,7 +12,7 @@ class DosingQueue{
     QueueElemnt* queue;
     public:
     DosingQueue();
-    int* get_next();
+    int get_next(int tab[2]);
     void add(int pump,int dose);
     bool is_empty();
 };

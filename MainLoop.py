@@ -263,7 +263,7 @@ class Hydroponics:
 
     def phControl(self): 
         ph=self.readPH()
-        self.logging("ph={}".format(ph))
+        self.logging(message="ph={}".format(ph))
         if ph>self.indication_limits['flowering']['ph']['standard']+self.indication_limits['flowering']['ph']['hysteresis']:
             self.dosing('ph-',1)
             self.logging(message="dosing ph- (1)")

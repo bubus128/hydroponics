@@ -11,12 +11,14 @@ DosingQueue::DosingQueue(){
     this->queue=NULL;
 }
 
-int* DosingQueue:: get_next(){
+int DosingQueue:: get_next(int tab[2]){
     if(this->is_empty())
         return NULL;
-    static int tab[2]={this->queue->pump,this->queue->dose};
+    tab[0]=this->queue->pump;
+    tab[1]=this->queue->dose;
+    //static int tab[2]={this->queue->pump,this->queue->dose};
     this->queue=this->queue->next;
-    return(tab);
+    return(1);
 }
 
 void DosingQueue::add(int pump,int dose){
