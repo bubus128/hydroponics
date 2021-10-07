@@ -202,11 +202,14 @@ class Hydroponics:
             else:
                 self.modules['tsl']=False
 
+    def changePchase(self):
+        self.day_of_phase=0
+        self.log['phase']='flowering' if self.log['phase']=='growth' else 'growth'
+        input('change fertilizers to {} phase and press ENTER'.format(self.log['phase']))
 
     def nextDay(self):
         if(self.day_of_phase==self.consts['phase_duration']):
-            self.day_of_phase=0
-            self.log['phase']='flowering' if self.log['phase']=='growth' else 'growth'
+            self.changePhase()
         self.day_of_phase+=1
         self.log['day']+=1
         self.log_file='../logs/'
