@@ -16,12 +16,17 @@ class Hydroponics:
         'loop_delay': 10,
         'fertilizer_delay': 60,
         'ph_delay': 120,
-        'exceptions_attemptions_count': 10
+        'exceptions_attemptions_count': 10,
+        'phase_duration':{
+            'flowering':56,
+            'growth':14
+        }
     }
+    day_of_phase=0
     log={
         'timer':None,
         'day':0,
-        'phase':'Flowering',
+        'phase':'growth',
         'day_phase':'day'
     }
     log_file=None
@@ -33,7 +38,7 @@ class Hydroponics:
         'temperature':True,
         'humidity':True,
         'PH':True,
-        'TDS':False,
+        'TDS':True,
         'water_level':False,
         'lights':True,
         'tsl':True
@@ -59,8 +64,8 @@ class Hydroponics:
         'fan':15
     }
     pumps={
-        'ph+':1,
-        'ph-':2,
+        'ph+':2,
+        'ph-':1,
         'boost':3,
         'fertilizer_A':18,
         'fertilizer_B':23
@@ -74,6 +79,7 @@ class Hydroponics:
     }
     indication_limits={
         'flowering':{
+            'days':56,
             'ph':{
                 'standard':6.1,
                 'hysteresis':0.2
@@ -100,7 +106,36 @@ class Hydroponics:
                 'standard':70,
                 'hysteresis':5
                 }
-            }
+            },
+        'growth':{
+            'days':14,
+            'ph':{
+                'standard':6.1,
+                'hysteresis':0.2
+                },
+            'tds':{
+                'standard':700,
+                'hysteresis':100
+                },
+            'light':{
+                'standard':1,
+                'hysteresis':1
+                },
+            'temperature':{
+                'day':{
+                    'standard':26,
+                    'hysteresis':3
+                },
+                'night':{
+                    'standard':24,
+                    'hysteresis':3
+                    }
+                },
+            'humidity':{
+                'standard':70,
+                'hysteresis':5
+                }
+        }
     }
     lights_list=[0,5,6,11,13,19]
     arduino_addr = 0x7 #arduino nano adress
@@ -169,6 +204,10 @@ class Hydroponics:
 
 
     def nextDay(self):
+        if(self.day_of_phase==self.consts['phase_duration']):
+            self.day_of_phase=0
+            self.log['phase']='flowering' if self.log['phase']=='growth' else 'growth'
+        self.day_of_phase+=1
         self.log['day']+=1
         self.log_file='../logs/'
         self.log_file+=datetime.now().strftime("%d %b %Y ")
@@ -290,10 +329,11 @@ class Hydroponics:
         self.bus.write_block_data(self.arduino_addr,0,data)
 
     def fertilizerDoseCalculation(self, tds):
+        #todo
         pass
 
     def fertilizerDosing(self,tds):
-        dose=self.fertilizerDoseCalculation(tds)
+        dose=1 #self.fertilizerDoseCalculation(tds)
         delay=dose/self.consts['fertilizer_ml_per_second']
         self.logging(message="dosing {}ml of fertilizer")
         GPIO.output(self.pumps['fertilizer_A'], GPIO.LOW)
