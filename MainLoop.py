@@ -5,6 +5,8 @@ from datetime import datetime
 import adafruit_tsl2591
 import adafruit_dht
 import board
+import glob
+import os
 from smbus import SMBus
 
 
@@ -150,7 +152,24 @@ class Hydroponics:
         # DTH11 setup
         self.dht_devices = [adafruit_dht.DHT11(board.D17),adafruit_dht.DHT11(board.D27)]
 
-        self.waterSetup()
+        if len(os.listdir('/home/pi/Desktop/logs') ) == 0:
+            self.waterSetup()
+        else:
+            list_of_files = glob.glob('/home/pi/Desktop/logs/*')
+            latest_file = max(list_of_files, key=os.path.getctime)
+            with open(latest_file) as f:
+                lines = f.readlines()
+            for line in lines:
+                if "day" in line:
+                    day = lines
+                elif "phase" in line:
+                    phase = lines
+                else:
+                    continue
+                    
+            self.log['day'] = day
+            self.log['phase'] = phase
+
         self.mainLoop()
     
     def tsl2591Setup(self,attempt=0):
