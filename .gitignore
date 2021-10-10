@@ -129,6 +129,10 @@ dmypy.json
 .pyre/
 
 poetry.lock
-#vs code
+
+#VS code
 .vscode/
 vsbuild/
+
+#Pycharm
+.idea/
