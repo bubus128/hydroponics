@@ -214,16 +214,16 @@ class Hydroponics:
         self.logger.nextDay()
 
     def waterSetup(self):
-        self.logger.logging(message="filling with water")
+        self.logger.logging(sensors_indications=self.sensors_indications, message="filling with water")
         input('pour the water and press ENTER')
         # self.waterFillUp()
-        self.logger.logging(message="filling done")
-        self.logger.logging(message='setting water ph level')
+        self.logger.logging(sensors_indications=self.sensors_indications, message="filling done")
+        self.logger.logging(sensors_indications=self.sensors_indications, message='setting water ph level')
         while self.phControl() != self.codes['correct']:
             time.sleep(self.ph_delay)
-        self.logger.logging(message='ph level set')
+        self.logger.logging(sensors_indications=self.sensors_indications, message='ph level set')
         input("plant strawberries and press ENTER")
-        self.logger.logging(message="strawberries planted")
+        self.logger.logging(sensors_indications=self.sensors_indications, message="strawberries planted")
 
     def dayCycleControl(self):
         current_time = datetime.now()
@@ -265,8 +265,8 @@ class Hydroponics:
                 time.sleep(1.5)
                 continue
 
-            except Exception as e:
-                self.logger.logging(error=e)
+            except Exception as error:
+                self.logger.logging(sensors_indications=self.sensors_indications, error=error)
                 continue
 
     def readHumidity(self):
@@ -289,7 +289,7 @@ class Hydroponics:
                 continue
 
             except Exception as error:
-                self.logger.logging(error=error)
+                self.logger.logging(sensors_indications=self.sensors_indications, error=error)
                 continue
 
     def phControl(self): 
@@ -297,12 +297,12 @@ class Hydroponics:
         if ph > self.indication_limits['flowering']['ph']['standard'] +\
                 self.indication_limits['flowering']['ph']['hysteresis']:
             self.dosing('ph-', 1)
-            self.logger.logging(message="dosing ph- (1)")
+            self.logger.logging(sensors_indications=self.sensors_indications, message="dosing ph- (1)")
             return self.codes['to_high']
         elif ph < self.indication_limits['flowering']['ph']['standard'] -\
                 self.indication_limits['flowering']['ph']['hysteresis']:
             self.dosing('ph+', 1)
-            self.logger.logging(message="dosing ph+ (1)")
+            self.logger.logging(sensors_indications=self.sensors_indications, message="dosing ph+ (1)")
             return self.codes['to_low']
         else:
             return self.codes['correct']
@@ -328,7 +328,7 @@ class Hydroponics:
     def fertilizerDosing(self,tds):
         dose = 1 #self.fertilizerDoseCalculation(tds)
         delay = dose/self.fertilizer_ml_per_second
-        self.logger.logging(message="dosing {}ml of fertilizer")
+        self.logger.logging(sensors_indications=self.sensors_indications, message="dosing {}ml of fertilizer")
         GPIO.output(self.pumps['fertilizer_A'], GPIO.LOW)
         GPIO.output(self.pumps['fertilizer_B'], GPIO.LOW)
         time.sleep(delay)
@@ -375,7 +375,7 @@ class Hydroponics:
                 continue
 
             except Exception as error:
-                self.logger.logging(error=error)
+                self.logger.logging(sensors_indications=self.sensors_indications, error=error)
                 continue
 
     def atomization(self, switch):
@@ -443,7 +443,7 @@ class Hydroponics:
                     fertilizer_delay -= self.loop_delay
             if self.modules['lights']:
                 self.dayCycleControl()
-            self.logger.logging(self.sensors_indications)
+            self.logger.logging(sensors_indications=self.sensors_indications)
             time.sleep(self.loop_delay)
 
         

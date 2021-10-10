@@ -28,6 +28,7 @@ class Logger:
                 self.log['phase'] = log['phase']
                 self.log['day_phase'] = log['day_phase']
                 self.log['day_of_phase'] = log['day_of_phase']
+            return True
 
     def changePhase(self, phase):
         self.log['phase'] = phase
@@ -53,7 +54,9 @@ class Logger:
         return self.log['day_phase']
 
     def logging(self, sensors_indications, error=None, message=None):
+        self.updateTime()
         log = self.log
+        log['timer'] = log['timer'].strftime("%m.%d.%Y, %H:%M:%S")
         log_dir = '../logs/'
         log_dir += log['timer']
         log_dir += '.json'
