@@ -1,3 +1,4 @@
+from Logger import Logger
 import RPi.GPIO as GPIO
 import sys
 import time
@@ -10,25 +11,19 @@ from smbus import SMBus
 
 class Hydroponics:
 
-    # TODO
-    consts={
-        'fertilizer_ml_per_second': 1.83,
-        'loop_delay': 10,
-        'fertilizer_delay': 60,
-        'ph_delay': 120,
-        'exceptions_attempts_count': 10,
-        'phase_duration': {
-            'flowering': 56,
-            'growth': 14
-        }
+    # Consts
+    fertilizer_ml_per_second = 1.83
+    loop_delay = 10
+    fertilizer_delay = 60,
+    ph_delay = 120,
+    exceptions_attempts_count = 10,
+    phase_duration = {
+        'flowering': 56,
+        'growth': 14
     }
     day_of_phase = 0
-    log = {
-        'timer': None,
-        'day': 0,
-        'phase': 'growth',
-        'day_phase': 'day'
-    }
+    phase = 'growth'
+    day_phase = 'day'
     log_file = None
     '''
     True -> module enabled
@@ -142,8 +137,7 @@ class Hydroponics:
     bus = SMBus(1)
 
     def __init__(self):
-        self.log['timer'] = datetime.now()
-        self.nextDay()
+        self.logger = Logger()
 
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
@@ -184,7 +178,13 @@ class Hydroponics:
         # DTH11 setup
         self.dht_devices = [adafruit_dht.DHT11(board.D17),adafruit_dht.DHT11(board.D27)]
 
-        self.waterSetup()
+        if not self.logger.getLastLog():
+            print('log file not found')
+            self.nextDay()
+            self.waterSetup()
+        else:
+            print('log file found')
+            
         self.mainLoop()
     
     def tsl2591Setup(self, attempt=0):
@@ -196,48 +196,46 @@ class Hydroponics:
         except Exception as e:
             print(e)
             attempt += 1
-            if attempt < self.consts['exceptions_attempts_count']:
+            if attempt < self.exceptions_attempts_count:
                 self.tsl2591Setup(attempt)
             else:
                 self.modules['tsl'] = False
 
     def changePchase(self):
         self.day_of_phase = 0
-        self.log['phase'] = 'flowering' if self.log['phase'] == 'growth' else 'growth'
-        input('change fertilizers to {} phase and press ENTER'.format(self.log['phase']))
+        self.phase = 'flowering' if self.phase == 'growth' else 'growth'
+        input('change fertilizers to {} phase and press ENTER'.format(self.phase))
+        self.logger.changePhase(self.phase)
 
     def nextDay(self):
-        if self.day_of_phase == self.consts['phase_duration']:
+        if self.day_of_phase == self.phase_duration:
             self.changePhase()
         self.day_of_phase += 1
-        self.log['day'] += 1
-        self.log_file = '../logs/'
-        self.log_file += datetime.now().strftime("%d %b %Y ")
-        self.log_file += '.txt'
+        self.logger.nextDay()
 
     def waterSetup(self):
-        self.logging(message="filling with water")
+        self.logger.logging(sensors_indications=self.sensors_indications, message="filling with water")
         input('pour the water and press ENTER')
         # self.waterFillUp()
-        self.logging(message="filling done")
-        self.logging(message='setting water ph level')
+        self.logger.logging(sensors_indications=self.sensors_indications, message="filling done")
+        self.logger.logging(sensors_indications=self.sensors_indications, message='setting water ph level')
         while self.phControl() != self.codes['correct']:
-            time.sleep(self.consts['ph_delay'])
-        self.logging(message='ph level set')
+            time.sleep(self.ph_delay)
+        self.logger.logging(sensors_indications=self.sensors_indications, message='ph level set')
         input("plant strawberries and press ENTER")
-        self.logging(message="strawberries planted")
+        self.logger.logging(sensors_indications=self.sensors_indications, message="strawberries planted")
 
     def dayCycleControl(self):
         current_time = datetime.now()
-        if self.log['timer'].hour > current_time.hour:
+        if self.logger.getTimer().hour > current_time.hour:
             self.nextDay()
-        self.log['timer'] = current_time
+        self.logger.updateTime()
         current_hour = current_time.hour
         if self.daily_light_cycle['flowering']['ON'] <= current_hour < self.daily_light_cycle['flowering']['OFF']:
-            self.log['day_phase'] = 'night'
+            self.logger.night()
             self.lightControl(0)
         else:
-            self.log['day_phase'] = 'day'
+            self.logger.day()
             self.lightControl(len(self.lights_list))
 
     def lightControl(self, lights_number=0):
@@ -267,8 +265,8 @@ class Hydroponics:
                 time.sleep(1.5)
                 continue
 
-            except Exception as e:
-                self.logging(error=e)
+            except Exception as error:
+                self.logger.logging(sensors_indications=self.sensors_indications, error=error)
                 continue
 
     def readHumidity(self):
@@ -291,28 +289,26 @@ class Hydroponics:
                 continue
 
             except Exception as error:
-                self.logging(error=error)
+                self.logger.logging(sensors_indications=self.sensors_indications, error=error)
                 continue
 
     def phControl(self): 
         ph = self.readPH()
-        self.logging(message="ph={}".format(ph))
         if ph > self.indication_limits['flowering']['ph']['standard'] +\
                 self.indication_limits['flowering']['ph']['hysteresis']:
             self.dosing('ph-', 1)
-            self.logging(message="dosing ph- (1)")
+            self.logger.logging(sensors_indications=self.sensors_indications, message="dosing ph- (1)")
             return self.codes['to_high']
         elif ph < self.indication_limits['flowering']['ph']['standard'] -\
                 self.indication_limits['flowering']['ph']['hysteresis']:
             self.dosing('ph+', 1)
-            self.logging(message="dosing ph+ (1)")
+            self.logger.logging(sensors_indications=self.sensors_indications, message="dosing ph+ (1)")
             return self.codes['to_low']
         else:
             return self.codes['correct']
 
     def tdsControl(self):
         tds = self.readTDS()
-        self.logging("tds={}".format(tds))
         if tds < self.indication_limits['flowering']['tds']['standard'] -\
                 self.indication_limits['flowering']['tds']['hysteresis']:
             self.fertilizerDosing(tds)
@@ -331,8 +327,8 @@ class Hydroponics:
 
     def fertilizerDosing(self,tds):
         dose = 1 #self.fertilizerDoseCalculation(tds)
-        delay = dose/self.consts['fertilizer_ml_per_second']
-        self.logging(message="dosing {}ml of fertilizer")
+        delay = dose/self.fertilizer_ml_per_second
+        self.logger.logging(sensors_indications=self.sensors_indications, message="dosing {}ml of fertilizer")
         GPIO.output(self.pumps['fertilizer_A'], GPIO.LOW)
         GPIO.output(self.pumps['fertilizer_B'], GPIO.LOW)
         time.sleep(delay)
@@ -379,7 +375,7 @@ class Hydroponics:
                 continue
 
             except Exception as error:
-                self.logging(error=error)
+                self.logger.logging(sensors_indications=self.sensors_indications, error=error)
                 continue
 
     def atomization(self, switch):
@@ -402,11 +398,11 @@ class Hydroponics:
 
     def temperatureControl(self):
         temperature = self.readTemperature()
-        if temperature > self.indication_limits['flowering']['temperature'][self.log['day_phase']]['standard'] +\
-                self.indication_limits['flowering']['temperature'][self.log['day_phase']]['hysteresis']:
+        if temperature > self.indication_limits['flowering']['temperature'][self.logger.getDayPhase()]['standard'] +\
+                self.indication_limits['flowering']['temperature'][self.logger.getDayPhase()]['hysteresis']:
             self.cooling(switch=True)
             self.ventylation(switch=True)
-        elif temperature <= self.indication_limits['flowering']['temperature'][self.log['day_phase']]['standard']:
+        elif temperature <= self.indication_limits['flowering']['temperature'][self.logger.getDayPhase()]['standard']:
             self.cooling(switch=False)
             self.ventylation(switch=False)
         else:
@@ -424,44 +420,6 @@ class Hydroponics:
         else:
             self.atomization(switch=False)
 
-    def logging(self, error=None, message=None):
-        try:
-            log = open(self.log_file, 'a')
-            if message is not None:
-                print(message)
-                log.write(message)
-            else:
-                self.log['timer'] = datetime.now()
-                if error is None:
-                    for key, value in self.log.items():
-                        print(key, ' : ', value)
-                        log.write('{} : {}\n'.format(key, value))
-                    print("sensors indications:")
-                    log.write("sensors indications:")
-                    for key, value in self.sensors_indications.items():
-                        if key == 'ph':
-                            value = self.sensors_indications['ph']
-                        print(key, ' : ', value)
-                        log.write('{} : {}\n'.format(key, value))
-                else:
-                    print("----------ERROR----------")
-                    print(error)
-                    print("----------ERROR----------")
-                    print(self.log)
-                    log.write("----------ERROR----------\n")
-                    log.write(error)
-                    log.write("----------ERROR----------\n")
-                    log.write('\n')
-                    for key, value in self.log.items():
-                        if key == 'ph':
-                            value = self.sensors_indications['ph']
-                        print(key, ' : ', value)
-                        log.write('{} : {}\n'.format(key, value))
-            log.write('\n\n')
-            print('\n\n')
-        finally:
-            log.close()
-
     def mainLoop(self):
         ph_delay = 0
         fertilizer_delay = 0
@@ -473,20 +431,20 @@ class Hydroponics:
             if self.modules['PH']:
                 if ph_delay == 0:
                     if self.phControl() != self.codes['correct']:
-                        ph_delay = self.consts['ph_delay']
+                        ph_delay = self.ph_delay
                 else:
-                    ph_delay -= self.consts['loop_delay']
+                    ph_delay -= self.loop_delay
                     fertilizer_delay
             if self.modules['TDS']:
                 if fertilizer_delay == 0:
                     if self.tdsControl() != self.codes['correct']:
-                        fertilizer_delay = self.consts['fertilizer_delay']
+                        fertilizer_delay = self.fertilizer_delay
                 else:
-                    fertilizer_delay -= self.consts['loop_delay']
+                    fertilizer_delay -= self.loop_delay
             if self.modules['lights']:
                 self.dayCycleControl()
-            self.logging()
-            time.sleep(self.consts['loop_delay'])
+            self.logger.logging(sensors_indications=self.sensors_indications)
+            time.sleep(self.loop_delay)
 
         
 if __name__ == "__main__":
