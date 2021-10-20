@@ -1,4 +1,5 @@
 from Logger import Logger
+from Sensor import Sensor
 import RPi.GPIO as GPIO
 import sys
 import time
@@ -138,6 +139,7 @@ class Hydroponics:
 
     def __init__(self):
         self.logger = Logger()
+        self.sensor = Sensor()
 
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
@@ -233,64 +235,10 @@ class Hydroponics:
         current_hour = current_time.hour
         if self.daily_light_cycle['flowering']['ON'] <= current_hour < self.daily_light_cycle['flowering']['OFF']:
             self.logger.night()
-            self.lightControl(0)
+            self.sensor.light_control(self.lights_list, 0)
         else:
             self.logger.day()
-            self.lightControl(len(self.lights_list))
-
-    def lightControl(self, lights_number=0):
-        # Switch on 'light_number' lights
-        for light in range(lights_number):
-            GPIO.output(self.lights_list[light], GPIO.LOW) 
-        # Switch off rest of lights
-        for light in range(lights_number, len(self.lights_list)):
-            GPIO.output(self.lights_list[light], GPIO.HIGH)
-
-    def readTemperature(self):
-        while True:
-            try:
-                tmp_temperature1 = self.dht_devices[0].temperature
-                if tmp_temperature1 is None:
-                    continue
-                tmp_temperature2 = self.dht_devices[1].temperature
-                if tmp_temperature2 is None:
-                    continue
-                temperature = (tmp_temperature1+tmp_temperature2)/2
-                print(f"Temperature: {temperature}")
-                self.sensors_indications['temperature'] = temperature
-                return temperature
-
-            except RuntimeError as error:
-                print(error.args[0])
-                time.sleep(1.5)
-                continue
-
-            except Exception as error:
-                self.logger.logging(sensors_indications=self.sensors_indications, error=error)
-                continue
-
-    def readHumidity(self):
-        while True:
-            try:
-                tmp_humidity1 = self.dht_devices[0].humidity
-                if tmp_humidity1 is None:
-                    continue
-                tmp_humidity2 = self.dht_devices[1].humidity
-                if tmp_humidity2 is None:
-                    continue
-                humidity = (tmp_humidity1+tmp_humidity2)/2
-                print(f"Humidity: {humidity} %")
-                self.sensors_indications['humidity'] = humidity
-                return humidity
-
-            except RuntimeError as error:
-                print(error.args[0])
-                time.sleep(1.5)
-                continue
-
-            except Exception as error:
-                self.logger.logging(sensors_indications=self.sensors_indications, error=error)
-                continue
+            self.sensor.light_control(self.lights_list, len(self.lights_list))  # is it change ? or always be 6 ?
 
     def phControl(self): 
         ph = self.readPH()
@@ -378,47 +326,29 @@ class Hydroponics:
                 self.logger.logging(sensors_indications=self.sensors_indications, error=error)
                 continue
 
-    def atomization(self, switch):
-        if switch:
-            GPIO.output(self.gpi_pins_dict['atomizer'], GPIO.HIGH)  # Turn atomizer on
-        else:
-            GPIO.output(self.gpi_pins_dict['atomizer'], GPIO.LOW)   # Turn atomizer back off
-
-    def ventylation(self, switch=False):
-        if switch:
-            GPIO.output(self.gpi_pins_dict['fan'], GPIO.LOW)
-        else:
-            GPIO.output(self.gpi_pins_dict['fan'], GPIO.HIGH)
-
-    def cooling(self, switch=False):
-        if switch:
-            GPIO.output(self.gpi_pins_dict['cooling'], GPIO.LOW)
-        else:
-            GPIO.output(self.gpi_pins_dict['cooling'], GPIO.HIGH)
-
     def temperatureControl(self):
-        temperature = self.readTemperature()
+        temperature = self.sensor.read_temperature()
         if temperature > self.indication_limits['flowering']['temperature'][self.logger.getDayPhase()]['standard'] +\
                 self.indication_limits['flowering']['temperature'][self.logger.getDayPhase()]['hysteresis']:
-            self.cooling(switch=True)
-            self.ventylation(switch=True)
+            self.sensor.on_off("cooling", switch=True)
+            self.sensor.on_off("fan", switch=True)
         elif temperature <= self.indication_limits['flowering']['temperature'][self.logger.getDayPhase()]['standard']:
-            self.cooling(switch=False)
-            self.ventylation(switch=False)
+            self.sensor.on_off("cooling", switch=False)
+            self.sensor.on_off("fan", switch=False)
         else:
-            self.ventylation(switch=False)
+            self.sensor.on_off("fan", switch=False)
 
     def humidityControl(self):
-        humidity = self.readHumidity()
+        humidity = self.sensor.read_humidity()
         if humidity < self.indication_limits['flowering']['humidity']['standard'] -\
                 self.indication_limits['flowering']['humidity']['hysteresis']:
-            self.atomization(switch=True)
+            self.sensor.on_off("atomizer", switch=True)
         elif humidity > self.indication_limits['flowering']['humidity']['standard'] +\
                 self.indication_limits['flowering']['humidity']['hysteresis']:
-            self.ventylation(switch=True)
-            self.atomization(switch=False)
+            self.sensor.on_off("fan", switch=True)
+            self.sensor.on_off("atomizer", switch=False)
         else:
-            self.atomization(switch=False)
+            self.sensor.on_off("atomizer", switch=False)
 
     def mainLoop(self):
         ph_delay = 0
