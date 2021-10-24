@@ -6,7 +6,7 @@ class SensorDht(Sensor):
     def __init__(self):
         super().__init__()
 
-    def read_value(self, sensor_type):
+    def read(self, sensor_type):
         n = 1
         while n < 6:
             from_first_sensor = self.dht_devices[0].locals()[sensor_type]  # podmiana nazwa metody z stringa na metode

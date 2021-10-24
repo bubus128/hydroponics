@@ -8,8 +8,9 @@ import time
 class SensorLight(Sensor):
     def __init__(self):
         super().__init__()
+        self.setup()
 
-    def tsl2591_setup(self, attempt=0):
+    def setup(self, attempt=0):
         exceptions_attempts_count = 10
         try:
             i2c = board.I2C()
@@ -20,7 +21,7 @@ class SensorLight(Sensor):
             print(e)
             attempt += 1
             if attempt < exceptions_attempts_count:
-                self.tsl2591_setup(attempt)
+                self.setup(attempt)
             else:
                 self.modules['tsl'] = False
 
@@ -36,13 +37,3 @@ class SensorLight(Sensor):
         else:
             self.logger.logging(sensors_indications=self.sensors_indications,
                                 error="Issue with light sensor")
-
-    def on_off(self, lights_list, lights_number=0):
-        # Switch on 'light_number' lights
-        for light in range(lights_number):
-            GPIO.output(lights_list[light], GPIO.LOW)
-        # Switch off rest of lights
-        for light in range(lights_number, len(lights_list)):
-            GPIO.output(lights_list[light], GPIO.HIGH)
-
-

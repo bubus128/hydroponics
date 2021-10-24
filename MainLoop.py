@@ -1,7 +1,11 @@
 from Logger import Logger
+from Module import Module
+from PHSensor import PhSensor
+from TDSSensor import TdsSensor
 from sensor import Sensor
 from sensor_light import SensorLight
 from sensor_dht import SensorDht
+from TdsSensor import TdsSensor
 from sensor_conditions import SensorConditions
 import RPi.GPIO as GPIO
 import sys
@@ -16,6 +20,9 @@ from smbus import SMBus
 class Hydroponics:
 
     # Consts
+    cooling_pin = 14
+    fan_pin = 15
+    atomizer_pin = 4
     fertilizer_ml_per_second = 1.83
     loop_delay = 10
     fertilizer_delay = 60,
@@ -24,6 +31,13 @@ class Hydroponics:
     phase_duration = {
         'flowering': 56,
         'growth': 14
+    }
+    sensors_indications = {
+        'ph': None,
+        'tds': None,
+        'light': None,
+        'temperature': None,
+        'humidity': None
     }
     day_of_phase = 0
     phase = 'growth'
@@ -47,11 +61,6 @@ class Hydroponics:
             'ON': 3,
             'OFF': 21
         }
-    }
-    gpi_pins_dict = {
-        'atomizer': 4,
-        'cooling': 14,
-        'fan': 15
     }
     pumps = {
         'ph+': 2,
@@ -127,10 +136,13 @@ class Hydroponics:
 
     def __init__(self):
         self.logger = Logger()
-        self.sensor = Sensor()
         self.sensor_light = SensorLight()
         self.sensor_dht = SensorDht()
-        self.sensor_conditions = SensorConditions()
+        self.tds_sensor = TdsSensor()
+        self.ph_sensor = PhSensor()
+        self.cooling = Module(self.cooling_pin)
+        self.fan = Module(self.fan_pin)
+        self.atomizer = Module(self.atomizer_pin)
 
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
@@ -138,18 +150,6 @@ class Hydroponics:
         for pin in self.lights_list:
             GPIO.setup(pin, GPIO.OUT)
             GPIO.output(pin, GPIO.HIGH)
-
-        # Atomizer
-        GPIO.setup(self.gpi_pins_dict['atomizer'], GPIO.OUT)
-        GPIO.output(self.gpi_pins_dict['atomizer'], GPIO.LOW)  # Off
-
-        # Cooling
-        GPIO.setup(self.gpi_pins_dict['cooling'], GPIO.OUT)
-        GPIO.output(self.gpi_pins_dict['cooling'], GPIO.HIGH)  # Off
-
-        # Fan
-        GPIO.setup(self.gpi_pins_dict['fan'], GPIO.OUT)
-        GPIO.output(self.gpi_pins_dict['fan'], GPIO.HIGH)  # Off
 
         # Fertilizer pumps 
         GPIO.setup(self.pumps['fertilizer_A'], GPIO.OUT)
@@ -164,9 +164,6 @@ class Hydroponics:
         # Off
         GPIO.output(9, GPIO.HIGH)
         GPIO.output(10, GPIO.HIGH)
-
-        # TSL2591 setup
-        self.sensor_light.tsl2591_setup()
 
         if not self.logger.getLastLog():
             print('log file not found')
@@ -215,7 +212,8 @@ class Hydroponics:
             self.sensor_light.on_off(self.lights_list, len(self.lights_list))  # is it change ? or always be 6 ?
 
     def phControl(self): 
-        ph = self.readPH()
+        ph = self.ph_sensor.read()
+        self.sensors_indications['ph'] = ph
         if ph > self.indication_limits['flowering']['ph']['standard'] +\
                 self.indication_limits['flowering']['ph']['hysteresis']:
             self.dosing('ph-', 1)
@@ -230,7 +228,8 @@ class Hydroponics:
             return self.codes['correct']
 
     def tdsControl(self):
-        tds = self.readTDS()
+        tds = self.tds_sensor.read()
+        self.sensors_indications['tds'] = tds
         if tds < self.indication_limits['flowering']['tds']['standard'] -\
                 self.indication_limits['flowering']['tds']['hysteresis']:
             self.fertilizerDosing(tds)
@@ -257,72 +256,29 @@ class Hydroponics:
         GPIO.output(self.pumps['fertilizer_A'], GPIO.HIGH)
         GPIO.output(self.pumps['fertilizer_B'], GPIO.HIGH)
 
-    def readPH(self):
-        self.bus.write_byte(self.arduino_addr, 5)  # Switch to the ph sensor
-        ph_reads = []
-        for i in range(20):
-            ph_reads.append(self.bus.read_byte(self.arduino_addr)/10)
-            time.sleep(0.05)
-        ph_reads.sort()
-        ph_reads = ph_reads[5:15]
-        ph = sum(ph_reads)/len(ph_reads)
-        self.sensor.sensors_indications['ph'] = ph
-        return ph
-    
-    def readTDS(self):
-        tds_reads = []
-        for i in range(20):
-            self.bus.write_byte(self.arduino_addr, 6)               # Switch to the tds sensor
-            self.bus.read_byte(self.arduino_addr)
-            tds_read = self.bus.read_byte(self.arduino_addr)          # Read high half of tds value and shift by 8
-            tds_read += self.bus.read_byte(self.arduino_addr)*2**8    # Read and add low half of tds value
-            tds_reads.append(tds_read)
-            time.sleep(0.05)
-        tds_reads.sort()
-        tds_reads = tds_reads[5:15]
-        tds = sum(tds_reads)/len(tds_reads)
-        self.sensor.sensors_indications['tds'] = tds
-        return tds
-
-    def readLightIntensity(self):                           # is this method never use ?
-        while True:
-            try:
-                lux = self.sensor_light.tsl2591_sensor.lux               # Measure light intensity
-                self.sensor.sensors_indications['light'] = lux     # Write light intensity to the sensors_indications dict
-                return lux
-
-            except RuntimeError as error:
-                print(error.args[0])
-                time.sleep(1.5)
-                continue
-
-            except Exception as error:
-                self.logger.logging(sensors_indications=self.sensor.sensors_indications, error=error)
-                continue
-
     def temperatureControl(self):
-        temperature = self.sensor_dht.read_value("temperature")
+        temperature = self.sensor_dht.read_temperature()
         if temperature > self.indication_limits['flowering']['temperature'][self.logger.getDayPhase()]['standard'] +\
                 self.indication_limits['flowering']['temperature'][self.logger.getDayPhase()]['hysteresis']:
-            self.sensor_conditions.on_off("cooling", switch=True)
-            self.sensor_conditions.on_off("fan", switch=True)
+            self.cooling.switch(True)
+            self.fan.switch(True)
         elif temperature <= self.indication_limits['flowering']['temperature'][self.logger.getDayPhase()]['standard']:
-            self.sensor_conditions.on_off("cooling", switch=False)
-            self.sensor_conditions.on_off("fan", switch=False)
+            self.cooling.switch(False)
+            self.fan.switch(False)
         else:
-            self.sensor_conditions.on_off("fan", switch=False)
+            self.fan.switch(False)
 
     def humidityControl(self):
-        humidity = self.sensor_dht.read_value("humidity")
+        humidity = self.sensor_dht.read_humidity()
         if humidity < self.indication_limits['flowering']['humidity']['standard'] -\
                 self.indication_limits['flowering']['humidity']['hysteresis']:
-            self.sensor_conditions.on_off("atomizer", switch=True)
+            self.atomizer.switch(True)
         elif humidity > self.indication_limits['flowering']['humidity']['standard'] +\
                 self.indication_limits['flowering']['humidity']['hysteresis']:
-            self.sensor_conditions.on_off("fan", switch=True)
-            self.sensor_conditions.on_off("atomizer", switch=False)
+            self.fan.switch(True)
+            self.atomizer.switch(False)
         else:
-            self.sensor_conditions.on_off("atomizer", switch=False)
+            self.atomizer.switch(False)
 
     def mainLoop(self):
         ph_delay = 0

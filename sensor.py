@@ -14,13 +14,7 @@ class Sensor:
             'lights': True,
             'tsl': True
         }
-        self.sensors_indications = {  # should be in json or separate file
-            'ph': None,
-            'tds': None,
-            'light': None,
-            'temperature': None,
-            'humidity': None
-        }
+
 
         self.gpi_pins_dict = {
             'atomizer': 4,
@@ -30,10 +24,7 @@ class Sensor:
         self.logger = Logger()
         self.dht_devices = [adafruit_dht.DHT11(board.D17), adafruit_dht.DHT11(board.D27)]
 
-    def on_off(self, **kwargs):
-        pass
-
-    def read_value(self, **kwargs):
+    def read(self, **kwargs):
         pass
 
 
