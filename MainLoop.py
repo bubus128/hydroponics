@@ -1,12 +1,12 @@
 from Logger import Logger
 from Module import Module
-from PHSensor import PhSensor
-from TDSSensor import TdsSensor
+from PhSensor import PhSensor
+from TdsSensor import TdsSensor
 from sensor import Sensor
 from sensor_light import SensorLight
 from sensor_dht import SensorDht
 from TdsSensor import TdsSensor
-from sensor_conditions import SensorConditions
+from Module import Module
 import RPi.GPIO as GPIO
 import sys
 import time
