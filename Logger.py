@@ -1,8 +1,8 @@
 import json
-import time
 import os
 import glob
 from datetime import datetime
+
 
 class Logger:
     log = {
@@ -36,7 +36,7 @@ class Logger:
 
     def nextDay(self):
         self.log['day'] += 1
-        self.log['day_of_phase'] +=1
+        self.log['day_of_phase'] += 1
 
     def getTimer(self):
         return self.log['timer']
@@ -55,7 +55,7 @@ class Logger:
 
     def logging(self, sensors_indications, error=None, message=None):
         self.updateTime()
-        log = self.log
+        log = self.log.copy
         log['timer'] = log['timer'].strftime("%m.%d.%Y, %H:%M:%S")
         log_dir = '../logs/'
         log_dir += log['timer']
@@ -73,6 +73,7 @@ class Logger:
         with open(log_dir, 'w') as fp:
             json.dump(log, fp)
 
-    def printer(self, dictionary):
+    @staticmethod
+    def printer(dictionary):
         for key, value in dictionary.items():
             print(key, ' : ', value)

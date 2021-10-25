@@ -133,6 +133,7 @@ poetry.lock
 #VS code
 .vscode/
 vsbuild/
+*.code-workspace
 
 #Pycharm
 .idea/

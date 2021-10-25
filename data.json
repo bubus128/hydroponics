@@ -1,0 +1,19 @@
+{
+  "sensors_indications":
+  {
+    "ph": "None",
+    "tds": "None",
+    "light": "None",
+    "temperature": "None",
+    "humidity": "None"
+  },
+
+  "gpi_pins_dict":
+  {
+    "atomizer": 4,
+    "cooling": 14,
+    "fan": 15
+  }
+}
+
+
