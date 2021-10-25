@@ -55,7 +55,7 @@ class Logger:
 
     def logging(self, sensors_indications, error=None, message=None):
         self.updateTime()
-        log = self.log
+        log = self.log.copy
         log['timer'] = log['timer'].strftime("%m.%d.%Y, %H:%M:%S")
         log_dir = '../logs/'
         log_dir += log['timer']

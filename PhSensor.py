@@ -3,7 +3,6 @@ import time
 
 class PhSensor(Sensor):
     def __init__(self):
-        self.arduino_addr = 0x7
         super().__init__()
 
     def read(self):
@@ -16,6 +15,3 @@ class PhSensor(Sensor):
         ph_reads = ph_reads[5:15]
         ph = sum(ph_reads)/len(ph_reads)
         return ph
-
-
-

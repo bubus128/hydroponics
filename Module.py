@@ -31,11 +31,3 @@ class Module:
         else:
             GPIO.output(self.pin, self.off)
             self.state = False
-
-
-
-
-
-
-
-
