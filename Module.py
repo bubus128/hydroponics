@@ -1,7 +1,4 @@
-from Logger import Logger
-import adafruit_dht
 import RPi.GPIO as GPIO
-import board
 
 
 class Module:
@@ -11,13 +8,13 @@ class Module:
         switch: method to change state of module (on/off)
         """
         self.state = False
-        self.pin=pin
+        self.pin = pin
         if on_state == 'HIGH':
-            self.on=GPIO.HIGH
-            self.off=GPIO.LOW
+            self.on = GPIO.HIGH
+            self.off = GPIO.LOW
         elif on_state == 'LOW':
-            self.on=GPIO.LOW
-            self.off=GPIO.HIGH
+            self.on = GPIO.LOW
+            self.off = GPIO.HIGH
         # Init GPIO pin
         GPIO.setup(self.pin, GPIO.OUT)
         GPIO.output(self.pin, self.off)

@@ -1,6 +1,7 @@
 from sensor import Sensor
 import time
 
+
 class PhSensor(Sensor):
     def __init__(self):
         super().__init__()

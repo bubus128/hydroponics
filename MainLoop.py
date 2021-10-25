@@ -1,9 +1,6 @@
 from LightModule import LightModule
 from Logger import Logger
-from Module import Module
 from PhSensor import PhSensor
-from TdsSensor import TdsSensor
-from sensor import Sensor
 from sensor_light import SensorLight
 from sensor_dht import SensorDht
 from TdsSensor import TdsSensor
@@ -12,9 +9,6 @@ import RPi.GPIO as GPIO
 import sys
 import time
 from datetime import datetime
-import adafruit_tsl2591
-import adafruit_dht
-import board
 from smbus import SMBus
 
 
@@ -181,7 +175,7 @@ class Hydroponics:
             
         self.mainLoop()
 
-    def changePchase(self):
+    def changePhase(self):
         self.day_of_phase = 0
         self.phase = 'flowering' if self.phase == 'growth' else 'growth'
         input('change fertilizers to {} phase and press ENTER'.format(self.phase))
@@ -249,14 +243,11 @@ class Hydroponics:
         data = [pump, dose]
         self.bus.write_block_data(self.arduino_addr, 0, data)
 
-    def fertilizerDoseCalculation(self, tds):
-        #todo
-        pass
-
-    def fertilizerDosing(self,tds):
-        dose = 1 #self.fertilizerDoseCalculation(tds)
+    def fertilizerDosing(self):
+        dose = 1
         delay = dose/self.fertilizer_ml_per_second
-        self.logger.logging(sensors_indications=self.sensors_indications, message="dosing {}ml of fertilizer".format(dose))
+        self.logger.logging(sensors_indications=self.sensors_indications,
+                            message="dosing {}ml of fertilizer".format(dose))
         GPIO.output(self.pumps['fertilizer_A'], GPIO.LOW)
         GPIO.output(self.pumps['fertilizer_B'], GPIO.LOW)
         time.sleep(delay)
@@ -303,7 +294,6 @@ class Hydroponics:
                         ph_delay = self.ph_delay
                 else:
                     ph_delay -= self.loop_delay
-                    fertilizer_delay
             if self.modules['TDS']:
                 if fertilizer_delay == 0:
                     if self.tdsControl() != self.codes['correct']:

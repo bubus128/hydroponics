@@ -1,5 +1,5 @@
-from Logger import Logger
 from smbus import SMBus
+
 
 class Sensor:
     def __init__(self):

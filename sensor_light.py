@@ -1,5 +1,4 @@
 from sensor import Sensor
-import RPi.GPIO as GPIO
 import adafruit_tsl2591
 import board
 import time
@@ -23,17 +22,15 @@ class SensorLight(Sensor):
             if attempt < exceptions_attempts_count:
                 self.setup(attempt)
             else:
-                self.modules['tsl'] = False
+                return False
 
-    def read_value(self):
+    def read(self):
         n = 1
         while n < 6:
-            lux = self.tsl2591_setup.lux
+            lux = self.tsl2591_sensor.lux
             if lux is not None:
-                self.sensors_indications['light'] = lux
                 return lux
             n += 1
             time.sleep(1.5)
         else:
-            self.logger.logging(sensors_indications=self.sensors_indications,
-                                error="Issue with light sensor")
+            print("Issue with light sensor")

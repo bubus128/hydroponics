@@ -4,15 +4,15 @@ import RPi.GPIO as GPIO
 
 class LightModule(Module):
     def __init__(self, pin, on_state='LOW'):
-        self.pins=pin
+        self.pins = pin
         self.state = False
-        self.pin=pin
+        self.pin = pin
         if on_state == 'HIGH':
-            self.on=GPIO.HIGH
-            self.off=GPIO.LOW
+            self.on = GPIO.HIGH
+            self.off = GPIO.LOW
         elif on_state == 'LOW':
-            self.on=GPIO.LOW
-            self.off=GPIO.HIGH
+            self.on = GPIO.LOW
+            self.off = GPIO.HIGH
         # Init lights pins
         for pin in self.pins:
             GPIO.setup(pin, GPIO.OUT)
