@@ -1,10 +1,10 @@
-from sensor import Sensor
+from Sensor import Sensor
 import time
 import adafruit_dht
 import board
 
 
-class SensorDht(Sensor):
+class DhtSensor(Sensor):
     def __init__(self):
         self.dht_devices = [adafruit_dht.DHT11(board.D17),  adafruit_dht.DHT11(board.D27)]
         super().__init__()
