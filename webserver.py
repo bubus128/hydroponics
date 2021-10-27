@@ -101,7 +101,7 @@ class hydroponicsHandler(BaseHTTPRequestHandler):
         elif dividedPath[1] == "dose":
             if dividedPath[2] == 'ph':  # dose/ph/[SUBSTANCE]/[DOSE]
                 substance = dividedPath[3]
-                dose = Int(dividedPath[4])
+                dose = int(dividedPath[4])
                 pump = hydroponics.pumps[substance]
                 data = [pump, dose]
                 hydroponics.bus.write_block_data(hydroponics.arduino_addr, 0, data)
@@ -135,13 +135,8 @@ class hydroponicsHandler(BaseHTTPRequestHandler):
                     self.wfile.write("OK".encode())  # TODO
 
 
-def main():
+if __name__ == '__main__':
     PORT = 8080
     server = HTTPServer(('', PORT), hydroponicsHandler)
     print('Server running on port %s' % PORT)
     server.serve_forever()
-
-
-if __name__ == '__main__':
-    main()
-
