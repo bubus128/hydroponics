@@ -2,10 +2,14 @@ from Sensor import Sensor
 import time
 import adafruit_dht
 import board
+import psutil
 
 
 class DhtSensor(Sensor):
     def __init__(self):
+        for proc in psutil.process_iter():
+            if proc.name() == 'libgpiod_pulsein' or proc.name() == 'libgpiod_pulsei':
+                proc.kill()
         self.dht_devices = [adafruit_dht.DHT11(board.D17),  adafruit_dht.DHT11(board.D27)]
         super().__init__()
 
