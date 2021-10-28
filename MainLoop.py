@@ -99,15 +99,15 @@ class Hydroponics:
                 'hysteresis': 5
             }
         },
-        'flowering': {
-            'days': 56,
+        'growth': {
+            'days': 14,
             'ph': {
                 'standard': 6.1,
                 'hysteresis': 0.2
             },
             'tds': {
-                'standard': 1050,
-                'hysteresis': 200
+                'standard': 700,
+                'hysteresis': 100
             },
             'light': {
                 'standard': 1,
@@ -128,15 +128,15 @@ class Hydroponics:
                 'hysteresis': 5
             }
         },
-        'growth': {
-            'days': 14,
+        'flowering': {
+            'days': 56,
             'ph': {
                 'standard': 6.1,
                 'hysteresis': 0.2
             },
             'tds': {
-                'standard': 700,
-                'hysteresis': 100
+                'standard': 1050,
+                'hysteresis': 200
             },
             'light': {
                 'standard': 1,
