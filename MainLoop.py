@@ -70,15 +70,15 @@ class Hydroponics:
         }
     }
     indication_limits = {
-        'flowering': {
-            'days': 56,
+        'resting': {
+            'days': 7,
             'ph': {
                 'standard': 6.1,
                 'hysteresis': 0.2
             },
             'tds': {
-                'standard': 1050,
-                'hysteresis': 200
+                'standard': 0,
+                'hysteresis': 1000
             },
             'light': {
                 'standard': 1,
@@ -108,6 +108,35 @@ class Hydroponics:
             'tds': {
                 'standard': 700,
                 'hysteresis': 100
+            },
+            'light': {
+                'standard': 1,
+                'hysteresis': 1
+            },
+            'temperature': {
+                'day': {
+                    'standard': 26,
+                    'hysteresis': 3
+                },
+                'night': {
+                    'standard': 24,
+                    'hysteresis': 3
+                }
+            },
+            'humidity': {
+                'standard': 70,
+                'hysteresis': 5
+            }
+        },
+        'flowering': {
+            'days': 56,
+            'ph': {
+                'standard': 6.1,
+                'hysteresis': 0.2
+            },
+            'tds': {
+                'standard': 1050,
+                'hysteresis': 200
             },
             'light': {
                 'standard': 1,
@@ -168,8 +197,12 @@ class Hydroponics:
         self.mainLoop()
 
     def changePhase(self):
+        phases_list = list(self.indication_limits.keys())
+        phase_num = phases_list.index(self.phase)
+        phase_num = (phase_num + 1) % len(phases_list)
         self.day_of_phase = 0
-        self.phase = 'flowering' if self.phase == 'growth' else 'growth'
+        self.phase = phases_list[phase_num]
+        #self.phase = 'flowering' if self.phase == 'growth' else 'growth'
         input('change fertilizers to {} phase and press ENTER'.format(self.phase))
         self.logger.changePhase(self.phase)
 
@@ -198,11 +231,11 @@ class Hydroponics:
         self.logger.updateTime()
         current_hour = current_time.hour
         if self.daily_light_cycle['flowering']['ON'] <= current_hour < self.daily_light_cycle['flowering']['OFF']:
-            self.logger.night()
-            self.light_module.switch('OFF')
-        else:
             self.logger.day()
             self.light_module.switch('ON')
+        else:
+            self.logger.night()
+            self.light_module.switch('OFF')
 
     def phControl(self):
         ph = self.ph_sensor.read()
