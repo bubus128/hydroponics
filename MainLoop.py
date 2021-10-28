@@ -37,7 +37,8 @@ class Hydroponics:
     }
     phase_duration = {
         'flowering': 56,
-        'growth': 14
+        'growth': 14,
+        'resting': 7
     }
     sensors_indications = {
         'ph': None,
@@ -47,7 +48,7 @@ class Hydroponics:
         'humidity': None
     }
     day_of_phase = 0
-    phase = 'growth'
+    phase = 'resting'
     day_phase = 'day'
     log_file = None
     '''
@@ -60,6 +61,10 @@ class Hydroponics:
         'correct': 0
     }
     daily_light_cycle = {
+        'resting': {
+            'ON': 3,
+            'OFF': 21
+        },
         'flowering': {
             'ON': 6,
             'OFF': 18
@@ -230,7 +235,7 @@ class Hydroponics:
             self.nextDay()
         self.logger.updateTime()
         current_hour = current_time.hour
-        if self.daily_light_cycle['flowering']['ON'] <= current_hour < self.daily_light_cycle['flowering']['OFF']:
+        if self.daily_light_cycle[self.phase]['ON'] <= current_hour < self.daily_light_cycle[self.phase]['OFF']:
             self.logger.day()
             self.light_module.switch('ON')
         else:
@@ -239,14 +244,16 @@ class Hydroponics:
 
     def phControl(self):
         ph = self.ph_sensor.read()
+        if ph == -1:
+            return self.codes['correct']
         self.sensors_indications['ph'] = ph
-        if ph > self.indication_limits['flowering']['ph']['standard'] + \
-                self.indication_limits['flowering']['ph']['hysteresis']:
+        if ph > self.indication_limits[self.phase]['ph']['standard'] + \
+                self.indication_limits[self.phase]['ph']['hysteresis']:
             self.ph_minus_pump.dosing(1)
             self.logger.logging(sensors_indications=self.sensors_indications, message="dosing ph- (1)")
             return self.codes['to_high']
-        elif ph < self.indication_limits['flowering']['ph']['standard'] - \
-                self.indication_limits['flowering']['ph']['hysteresis']:
+        elif ph < self.indication_limits[self.phase]['ph']['standard'] - \
+                self.indication_limits[self.phase]['ph']['hysteresis']:
             self.ph_plus_pump.dosing(1)
             self.logger.logging(sensors_indications=self.sensors_indications, message="dosing ph+ (1)")
             return self.codes['to_low']
@@ -255,9 +262,11 @@ class Hydroponics:
 
     def tdsControl(self):
         tds = self.tds_sensor.read()
+        if tds == -1:
+            return self.codes['correct']
         self.sensors_indications['tds'] = tds
-        if tds < self.indication_limits['flowering']['tds']['standard'] - \
-                self.indication_limits['flowering']['tds']['hysteresis']:
+        if tds < self.indication_limits[self.phase]['tds']['standard'] - \
+                self.indication_limits[self.phase]['tds']['hysteresis']:
             dose = 1
             self.fertilizer_pump_a.dosing(dose)
             self.fertilizer_pump_b.dosing(dose)
@@ -270,11 +279,11 @@ class Hydroponics:
     def temperatureControl(self):
         temperature = self.sensor_dht.readTemperature()
         self.sensors_indications['temperature'] = temperature
-        if temperature > self.indication_limits['flowering']['temperature'][self.logger.getDayPhase()]['standard'] + \
-                self.indication_limits['flowering']['temperature'][self.logger.getDayPhase()]['hysteresis']:
+        if temperature > self.indication_limits[self.phase]['temperature'][self.logger.getDayPhase()]['standard'] + \
+                self.indication_limits[self.phase]['temperature'][self.logger.getDayPhase()]['hysteresis']:
             self.cooling.switch(True)
             self.fan.switch(True)
-        elif temperature <= self.indication_limits['flowering']['temperature'][self.logger.getDayPhase()]['standard']:
+        elif temperature <= self.indication_limits[self.phase]['temperature'][self.logger.getDayPhase()]['standard']:
             self.cooling.switch(False)
             self.fan.switch(False)
         else:
@@ -283,11 +292,11 @@ class Hydroponics:
     def humidityControl(self):
         humidity = self.sensor_dht.readHumidity()
         self.sensors_indications['humidity'] = humidity
-        if humidity < self.indication_limits['flowering']['humidity']['standard'] - \
-                self.indication_limits['flowering']['humidity']['hysteresis']:
+        if humidity < self.indication_limits[self.phase]['humidity']['standard'] - \
+                self.indication_limits[self.phase]['humidity']['hysteresis']:
             self.atomizer.switch(True)
-        elif humidity > self.indication_limits['flowering']['humidity']['standard'] + \
-                self.indication_limits['flowering']['humidity']['hysteresis']:
+        elif humidity > self.indication_limits[self.phase]['humidity']['standard'] + \
+                self.indication_limits[self.phase]['humidity']['hysteresis']:
             self.fan.switch(True)
             self.atomizer.switch(False)
         else:
