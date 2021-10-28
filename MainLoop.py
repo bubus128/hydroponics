@@ -231,11 +231,11 @@ class Hydroponics:
         self.logger.updateTime()
         current_hour = current_time.hour
         if self.daily_light_cycle['flowering']['ON'] <= current_hour < self.daily_light_cycle['flowering']['OFF']:
-            self.logger.night()
-            self.light_module.switch('OFF')
-        else:
             self.logger.day()
             self.light_module.switch('ON')
+        else:
+            self.logger.night()
+            self.light_module.switch('OFF')
 
     def phControl(self):
         ph = self.ph_sensor.read()
