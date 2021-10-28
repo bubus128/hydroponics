@@ -70,6 +70,35 @@ class Hydroponics:
         }
     }
     indication_limits = {
+        'resting': {
+            'days': 7,
+            'ph': {
+                'standard': 6.1,
+                'hysteresis': 0.2
+            },
+            'tds': {
+                'standard': 0,
+                'hysteresis': 1000
+            },
+            'light': {
+                'standard': 1,
+                'hysteresis': 1
+            },
+            'temperature': {
+                'day': {
+                    'standard': 26,
+                    'hysteresis': 3
+                },
+                'night': {
+                    'standard': 24,
+                    'hysteresis': 3
+                }
+            },
+            'humidity': {
+                'standard': 70,
+                'hysteresis': 5
+            }
+        },
         'flowering': {
             'days': 56,
             'ph': {
@@ -168,8 +197,12 @@ class Hydroponics:
         self.mainLoop()
 
     def changePhase(self):
+        phases_list = list(self.indication_limits.keys())
+        phase_num = phases_list.index(self.phase)
+        phase_num = (phase_num + 1) % len(phases_list)
         self.day_of_phase = 0
-        self.phase = 'flowering' if self.phase == 'growth' else 'growth'
+        self.phase = phases_list[phase_num]
+        #self.phase = 'flowering' if self.phase == 'growth' else 'growth'
         input('change fertilizers to {} phase and press ENTER'.format(self.phase))
         self.logger.changePhase(self.phase)
 
