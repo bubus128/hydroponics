@@ -2,15 +2,13 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from LightModule import LightModule
 from Logger import Logger
 from PhSensor import PhSensor
-from sensor_light import SensorLight
-from sensor_dht import SensorDht
+from LightSensor import LightSensor
+from DhtSensor import DhtSensor
 from TdsSensor import TdsSensor
 from Module import Module
 import RPi.GPIO as GPIO
-import sys
 import time
-from datetime import datetime
-from smbus import SMBus
+
 
 Dict = {"temperature": "28",
         "humidity": "0",
@@ -25,7 +23,7 @@ Dict = {"temperature": "28",
         }
 
 
-class Hydroponics():
+class Hydroponics:
     cooling_pin = 14
     fan_pin = 15
     atomizer_pin = 4
@@ -47,8 +45,8 @@ class Hydroponics():
 
     def __init__(self):
         self.logger = Logger()
-        self.sensor_light = SensorLight()
-        self.sensor_dht = SensorDht()
+        self.sensor_light = LightSensor()
+        self.sensor_dht = DhtSensor()
         self.tds_sensor = TdsSensor()
         self.ph_sensor = PhSensor()
         self.cooling = Module(self.cooling_pin)
@@ -80,33 +78,33 @@ class Hydroponics():
 hydroponics = Hydroponics()
 
 
-class hydroponicsHandler(BaseHTTPRequestHandler):
+class HydroponicsHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self.send_response(200)
         self.send_header('content-typ', 'text/html')
         self.end_headers()
-        dividedPath = self.path.split("/")
-        if dividedPath[1] == "get":
-            if dividedPath[2] == "temperature":
+        divided_path = self.path.split("/")
+        if divided_path[1] == "get":
+            if divided_path[2] == "temperature":
                 self.wfile.write(str(hydroponics.sensor_dht.readTemperature()).encode())
-            elif dividedPath[2] == "humidity":
+            elif divided_path[2] == "humidity":
                 self.wfile.write(str(hydroponics.sensor_dht.readHumidity()).encode())
-            elif dividedPath[2] == "ph":
+            elif divided_path[2] == "ph":
                 self.wfile.write(str(hydroponics.ph_sensor.read()).encode())
-            elif dividedPath[2] == "tds":
+            elif divided_path[2] == "tds":
                 self.wfile.write(str(hydroponics.tds_sensor.read()).encode())
-            elif dividedPath[2] == "light":
+            elif divided_path[2] == "light":
                 self.wfile.write(str(hydroponics.sensor_light.read()).encode())
-        elif dividedPath[1] == "dose":
-            if dividedPath[2] == 'ph':  # dose/ph/[SUBSTANCE]/[DOSE]
-                substance = dividedPath[3]
-                dose = Int(dividedPath[4])
+        elif divided_path[1] == "dose":
+            if divided_path[2] == 'ph':  # dose/ph/[SUBSTANCE]/[DOSE]
+                substance = divided_path[3]
+                dose = int(divided_path[4])
                 pump = hydroponics.pumps[substance]
                 data = [pump, dose]
                 hydroponics.bus.write_block_data(hydroponics.arduino_addr, 0, data)
                 self.wfile.write("OK".encode())  # TODO
-            elif dividedPath[2] == 'fertilizer':
+            elif divided_path[2] == 'fertilizer':
                 dose = 1
                 delay = dose / hydroponics.fertilizer_ml_per_second
                 GPIO.output(hydroponics.pumps['fertilizer_A'], GPIO.LOW)
@@ -115,33 +113,28 @@ class hydroponicsHandler(BaseHTTPRequestHandler):
                 GPIO.output(hydroponics.pumps['fertilizer_A'], GPIO.HIGH)
                 GPIO.output(hydroponics.pumps['fertilizer_B'], GPIO.HIGH)
                 self.wfile.write("OK".encode())  # TODO
-        elif dividedPath[1] == 'switch':
-            if dividedPath[2] == 'temperature':
-                if dividedPath[3] == 'decrease':
+        elif divided_path[1] == 'switch':
+            if divided_path[2] == 'temperature':
+                if divided_path[3] == 'decrease':
                     hydroponics.cooling.switch(True)
                     hydroponics.fan.switch(True)
                     self.wfile.write("OK".encode())  # TODO
-                elif dividedPath[3] == 'increase':
+                elif divided_path[3] == 'increase':
                     hydroponics.cooling.switch(False)
                     hydroponics.fan.switch(False)
                     self.wfile.write("OK".encode())  # TODO
-            elif dividedPath[2] == 'humidity':
-                if dividedPath[3] == 'decrease':
+            elif divided_path[2] == 'humidity':
+                if divided_path[3] == 'decrease':
                     hydroponics.fan.switch(True)
                     hydroponics.atomizer.switch(False)
                     self.wfile.write("OK".encode())  # TODO
-                elif dividedPath[3] == 'increase':
+                elif divided_path[3] == 'increase':
                     hydroponics.atomizer.switch(True)
                     self.wfile.write("OK".encode())  # TODO
 
 
-def main():
+if __name__ == '__main__':
     PORT = 8080
-    server = HTTPServer(('', PORT), hydroponicsHandler)
+    server = HTTPServer(('', PORT), HydroponicsHandler)
     print('Server running on port %s' % PORT)
     server.serve_forever()
-
-
-if __name__ == '__main__':
-    main()
-

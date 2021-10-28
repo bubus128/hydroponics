@@ -1,28 +1,31 @@
 from LightModule import LightModule
 from Logger import Logger
+from PeristalticPump import PeristalticPump
 from PhSensor import PhSensor
-from sensor_light import SensorLight
-from sensor_dht import SensorDht
+from SyringePump import SyringePump
+from LightSensor import LightSensor
+from DhtSensor import DhtSensor
 from TdsSensor import TdsSensor
 from Module import Module
 import RPi.GPIO as GPIO
-import sys
 import time
 from datetime import datetime
-from smbus import SMBus
 
 
 class Hydroponics:
-
     # Consts
     cooling_pin = 14
     fan_pin = 15
     atomizer_pin = 4
-    fertilizer_ml_per_second = 1.83
     loop_delay = 10
     fertilizer_delay = 60
     ph_delay = 120
     exceptions_attempts_count = 10
+    ph_plus_pump_num = 2
+    ph_minus_pump_num = 1
+    booster_pump_num = 3
+    fertilizer_a_pump_pin = 18
+    fertilizer_b_pump_pin = 23
     modules = {
         'temperature': True,
         'humidity': True,
@@ -66,29 +69,21 @@ class Hydroponics:
             'OFF': 21
         }
     }
-    pumps = {
-        'ph+': 2,
-        'ph-': 1,
-        'boost': 3,
-        'fertilizer_A': 18,
-        'fertilizer_B': 23
-    }
-
     indication_limits = {
         'flowering': {
             'days': 56,
             'ph': {
                 'standard': 6.1,
                 'hysteresis': 0.2
-                },
+            },
             'tds': {
                 'standard': 1050,
                 'hysteresis': 200
-                },
+            },
             'light': {
                 'standard': 1,
                 'hysteresis': 1
-                },
+            },
             'temperature': {
                 'day': {
                     'standard': 26,
@@ -97,27 +92,27 @@ class Hydroponics:
                 'night': {
                     'standard': 24,
                     'hysteresis': 3
-                    }
-                },
+                }
+            },
             'humidity': {
                 'standard': 70,
                 'hysteresis': 5
-                }
-            },
+            }
+        },
         'growth': {
             'days': 14,
             'ph': {
                 'standard': 6.1,
                 'hysteresis': 0.2
-                },
+            },
             'tds': {
                 'standard': 700,
                 'hysteresis': 100
-                },
+            },
             'light': {
                 'standard': 1,
                 'hysteresis': 1
-                },
+            },
             'temperature': {
                 'day': {
                     'standard': 26,
@@ -126,42 +121,39 @@ class Hydroponics:
                 'night': {
                     'standard': 24,
                     'hysteresis': 3
-                    }
-                },
+                }
+            },
             'humidity': {
                 'standard': 70,
                 'hysteresis': 5
-                }
+            }
         }
     }
     lights_list = [0, 5, 6, 11, 13, 19]
     arduino_addr = 0x7  # Arduino nano address
-    bus = SMBus(1)
 
     def __init__(self):
         self.logger = Logger()
-        self.sensor_light = SensorLight()
-        self.sensor_dht = SensorDht()
+        self.sensor_light = LightSensor()
+        self.sensor_dht = DhtSensor()
         self.tds_sensor = TdsSensor()
         self.ph_sensor = PhSensor()
         self.cooling = Module(self.cooling_pin)
         self.fan = Module(self.fan_pin)
         self.atomizer = Module(self.atomizer_pin, on_state='HIGH')
         self.light_module = LightModule(self.lights_list)
+        self.fertilizer_pump_a = PeristalticPump(self.fertilizer_a_pump_pin)
+        self.fertilizer_pump_b = PeristalticPump(self.fertilizer_b_pump_pin)
+        self.ph_plus_pump = SyringePump(self.ph_plus_pump_num)
+        self.ph_minus_pump = SyringePump(self.ph_minus_pump_num)
 
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
 
-        # Fertilizer pumps 
-        GPIO.setup(self.pumps['fertilizer_A'], GPIO.OUT)
-        GPIO.setup(self.pumps['fertilizer_B'], GPIO.OUT)
-        GPIO.output(self.pumps['fertilizer_A'], GPIO.HIGH)
-        GPIO.output(self.pumps['fertilizer_B'], GPIO.HIGH)  
-
         # Relay (unallocated)
         GPIO.setup(9, GPIO.OUT)
         GPIO.setup(10, GPIO.OUT)
-        
+
         # Off
         GPIO.output(9, GPIO.HIGH)
         GPIO.output(10, GPIO.HIGH)
@@ -172,7 +164,7 @@ class Hydroponics:
             self.waterSetup()
         else:
             print('log file found')
-            
+
         self.mainLoop()
 
     def changePhase(self):
@@ -212,17 +204,17 @@ class Hydroponics:
             self.logger.day()
             self.light_module.switch('ON')
 
-    def phControl(self): 
+    def phControl(self):
         ph = self.ph_sensor.read()
         self.sensors_indications['ph'] = ph
-        if ph > self.indication_limits['flowering']['ph']['standard'] +\
+        if ph > self.indication_limits['flowering']['ph']['standard'] + \
                 self.indication_limits['flowering']['ph']['hysteresis']:
-            self.dosing('ph-', 1)
+            self.ph_minus_pump.dosing(1)
             self.logger.logging(sensors_indications=self.sensors_indications, message="dosing ph- (1)")
             return self.codes['to_high']
-        elif ph < self.indication_limits['flowering']['ph']['standard'] -\
+        elif ph < self.indication_limits['flowering']['ph']['standard'] - \
                 self.indication_limits['flowering']['ph']['hysteresis']:
-            self.dosing('ph+', 1)
+            self.ph_plus_pump.dosing(1)
             self.logger.logging(sensors_indications=self.sensors_indications, message="dosing ph+ (1)")
             return self.codes['to_low']
         else:
@@ -231,33 +223,21 @@ class Hydroponics:
     def tdsControl(self):
         tds = self.tds_sensor.read()
         self.sensors_indications['tds'] = tds
-        if tds < self.indication_limits['flowering']['tds']['standard'] -\
+        if tds < self.indication_limits['flowering']['tds']['standard'] - \
                 self.indication_limits['flowering']['tds']['hysteresis']:
-            self.fertilizerDosing(tds)
+            dose = 1
+            self.fertilizer_pump_a.dosing(dose)
+            self.fertilizer_pump_b.dosing(dose)
+            self.logger.logging(sensors_indications=self.sensors_indications,
+                                message="dosing {}ml of fertilizer".format(dose))
             return self.codes['to_low']
         else:
             return self.codes['correct']
 
-    def dosing(self, substance, dose):
-        pump = self.pumps[substance]
-        data = [pump, dose]
-        self.bus.write_block_data(self.arduino_addr, 0, data)
-
-    def fertilizerDosing(self):
-        dose = 1
-        delay = dose/self.fertilizer_ml_per_second
-        self.logger.logging(sensors_indications=self.sensors_indications,
-                            message="dosing {}ml of fertilizer".format(dose))
-        GPIO.output(self.pumps['fertilizer_A'], GPIO.LOW)
-        GPIO.output(self.pumps['fertilizer_B'], GPIO.LOW)
-        time.sleep(delay)
-        GPIO.output(self.pumps['fertilizer_A'], GPIO.HIGH)
-        GPIO.output(self.pumps['fertilizer_B'], GPIO.HIGH)
-
     def temperatureControl(self):
         temperature = self.sensor_dht.readTemperature()
         self.sensors_indications['temperature'] = temperature
-        if temperature > self.indication_limits['flowering']['temperature'][self.logger.getDayPhase()]['standard'] +\
+        if temperature > self.indication_limits['flowering']['temperature'][self.logger.getDayPhase()]['standard'] + \
                 self.indication_limits['flowering']['temperature'][self.logger.getDayPhase()]['hysteresis']:
             self.cooling.switch(True)
             self.fan.switch(True)
@@ -270,10 +250,10 @@ class Hydroponics:
     def humidityControl(self):
         humidity = self.sensor_dht.readHumidity()
         self.sensors_indications['humidity'] = humidity
-        if humidity < self.indication_limits['flowering']['humidity']['standard'] -\
+        if humidity < self.indication_limits['flowering']['humidity']['standard'] - \
                 self.indication_limits['flowering']['humidity']['hysteresis']:
             self.atomizer.switch(True)
-        elif humidity > self.indication_limits['flowering']['humidity']['standard'] +\
+        elif humidity > self.indication_limits['flowering']['humidity']['standard'] + \
                 self.indication_limits['flowering']['humidity']['hysteresis']:
             self.fan.switch(True)
             self.atomizer.switch(False)
@@ -305,6 +285,6 @@ class Hydroponics:
             self.logger.logging(sensors_indications=self.sensors_indications)
             time.sleep(self.loop_delay)
 
-        
+
 if __name__ == "__main__":
     plantation = Hydroponics()
