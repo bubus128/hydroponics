@@ -1,3 +1,4 @@
+from os import error
 from LightModule import LightModule
 from Logger import Logger
 from PeristalticPump import PeristalticPump
@@ -199,7 +200,13 @@ class Hydroponics:
         else:
             print('log file found')
 
-        self.mainLoop()
+        while True:
+            try:
+                self.mainLoop()
+            except Exception as e:
+                self.logger.logging(sensors_indications=None, error=e)
+            except:
+                self.logger.logging(sensors_indications=None, error='unknown exception')
 
     def changePhase(self):
         phases_list = list(self.indication_limits.keys())
