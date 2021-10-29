@@ -12,6 +12,7 @@ class Logger:
         'day_phase': 'day',
         'day_of_phase': 0
     }
+    error_header = "----------ERROR----------"
 
     def __init__(self):
         self.log['timer'] = datetime.now()
@@ -55,23 +56,25 @@ class Logger:
 
     def logging(self, sensors_indications, error=None, message=None):
         self.updateTime()
-        log = self.log.copy()
-        log['timer'] = log['timer'].strftime("%m.%d.%Y, %H:%M:%S")
-        log_dir = '../logs/'
-        log_dir += log['timer']
-        log_dir += '.json'
-        if message is not None:
-            log['message'] = message
         if error is not None:
-            log['error'] = error
-            print("----------ERROR----------")
-            print(error)
-            print("----------ERROR----------")
-        self.printer(log)
-        self.printer(sensors_indications)
-        log['sensors_indications'] = sensors_indications
-        with open(log_dir, 'w') as fp:
-            json.dump(log, fp)
+            err_dir = '../eroor_logs/day_{}_phase_{}.json'.format(self.log['day'],self.log['phase'])
+            print("{}\n{}\n{}".format(self.error_header,str(error),self.error_header))
+            with open(err_dir, 'w') as ep:
+                error_dict = {str(self.log['timer']): error}
+                json.dump(error_dict, ep)
+        else:
+            log = self.log.copy()
+            log['timer'] = log['timer'].strftime("%m.%d.%Y, %H:%M:%S")
+            log_dir = '../logs/'
+            log_dir += log['timer']
+            log_dir += '.json'
+            if message is not None:
+                log['message'] = message
+            self.printer(log)
+            self.printer(sensors_indications)
+            log['sensors_indications'] = sensors_indications
+            with open(log_dir, 'w') as fp:
+                json.dump(log, fp)
 
     @staticmethod
     def printer(dictionary):
