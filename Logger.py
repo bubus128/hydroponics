@@ -3,6 +3,7 @@ import os
 import glob
 from datetime import datetime
 import time
+from picamera import PiCamera
 
 
 class Logger:
@@ -17,6 +18,7 @@ class Logger:
 
     def __init__(self):
         self.log['timer'] = datetime.now()
+        self.camera = PiCamera()
 
     def getLastLog(self):
         list_of_files = glob.glob('../logs/*.json')
@@ -58,8 +60,8 @@ class Logger:
     def logging(self, sensors_indications, error=None, message=None, print_only=False):
         self.updateTime()
         if error is not None:
-            err_dir = '../eroor_logs/day_{}_phase_{}.json'.format(self.log['day'],self.log['phase'])
-            print("{}\n{}\n{}".format(self.error_header,str(error),self.error_header))
+            err_dir = '../error_logs/day_{}_phase_{}.json'.format(self.log['day'], self.log['phase'])
+            print("{}\n{}\n{}".format(self.error_header, str(error), self.error_header))
             with open(err_dir, 'w') as ep:
                 error_dict = {str(self.log['timer'].strftime("%m.%d.%Y, %H:%M:%S")): error}
                 json.dump(error_dict, ep)
