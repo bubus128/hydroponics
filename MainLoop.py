@@ -205,8 +205,6 @@ class Hydroponics:
                 self.mainLoop()
             except Exception as e:
                 self.logger.logging(sensors_indications=None, error=e)
-            except:
-                self.logger.logging(sensors_indications=None, error='unknown exception')
 
     def changePhase(self):
         phases_list = list(self.indication_limits.keys())
