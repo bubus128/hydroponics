@@ -237,7 +237,7 @@ class Hydroponics:
 
     def dayCycleControl(self):
         current_time = datetime.now()
-        if self.logger.getTimer().minute > current_time.minute:
+        if self.logger.getTimer().minute < current_time.minute:
             self.logger.logging(sensors_indications=self.sensors_indications)
         if self.logger.getTimer().hour > current_time.hour:
             self.nextDay()
