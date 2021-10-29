@@ -2,6 +2,7 @@ import json
 import os
 import glob
 from datetime import datetime
+import time
 
 
 class Logger:
@@ -60,7 +61,7 @@ class Logger:
             err_dir = '../eroor_logs/day_{}_phase_{}.json'.format(self.log['day'],self.log['phase'])
             print("{}\n{}\n{}".format(self.error_header,str(error),self.error_header))
             with open(err_dir, 'w') as ep:
-                error_dict = {str(self.log['timer']): error}
+                error_dict = {str(self.log['timer'].strftime("%m.%d.%Y, %H:%M:%S")): error}
                 json.dump(error_dict, ep)
         else:
             log = self.log.copy()
@@ -74,6 +75,14 @@ class Logger:
                 log['sensors_indications'] = sensors_indications
                 with open(log_dir, 'w') as fp:
                     json.dump(log, fp)
+
+    def takePhoto(self):
+        timer = self.log['timer'].strftime("%m.%d.%Y, %H:%M:%S")
+        photo_dir = "../photos/{}.jpg".format(timer)
+        self.camera.start_preview()
+        time.sleep(3)
+        self.camera.capture(photo_dir)
+        self.camera.stop_preview()
 
     @staticmethod
     def printer(dictionary):

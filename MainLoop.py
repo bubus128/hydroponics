@@ -223,6 +223,7 @@ class Hydroponics:
             self.changePhase()
         self.day_of_phase += 1
         self.logger.nextDay()
+        self.logger.takePhoto()
 
     def waterSetup(self):
         self.logger.logging(sensors_indications=self.sensors_indications, message="filling with water")
