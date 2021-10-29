@@ -2,6 +2,8 @@ import json
 import os
 import glob
 from datetime import datetime
+import time
+from picamera import PiCamera
 
 
 class Logger:
@@ -12,9 +14,11 @@ class Logger:
         'day_phase': 'day',
         'day_of_phase': 0
     }
+    error_header = "----------ERROR----------"
 
     def __init__(self):
         self.log['timer'] = datetime.now()
+        self.camera = PiCamera()
 
     def getLastLog(self):
         list_of_files = glob.glob('../logs/*.json')
@@ -53,25 +57,34 @@ class Logger:
     def getDayPhase(self):
         return self.log['day_phase']
 
-    def logging(self, sensors_indications, error=None, message=None):
+    def logging(self, sensors_indications, error=None, message=None, print_only=False):
         self.updateTime()
-        log = self.log.copy()
-        log['timer'] = log['timer'].strftime("%m.%d.%Y, %H:%M:%S")
-        log_dir = '../logs/'
-        log_dir += log['timer']
-        log_dir += '.json'
-        if message is not None:
-            log['message'] = message
         if error is not None:
-            log['error'] = error
-            print("----------ERROR----------")
-            print(error)
-            print("----------ERROR----------")
-        self.printer(log)
-        self.printer(sensors_indications)
-        log['sensors_indications'] = sensors_indications
-        with open(log_dir, 'w') as fp:
-            json.dump(log, fp)
+            err_dir = '../error_logs/day_{}_phase_{}.json'.format(self.log['day'], self.log['phase'])
+            print("{}\n{}\n{}".format(self.error_header, str(error), self.error_header))
+            with open(err_dir, 'w') as ep:
+                error_dict = {str(self.log['timer'].strftime("%m.%d.%Y, %H:%M:%S")): error}
+                json.dump(error_dict, ep)
+        else:
+            log = self.log.copy()
+            log['timer'] = log['timer'].strftime("%m.%d.%Y, %H:%M:%S")
+            if message is not None:
+                log['message'] = message
+            self.printer(log)
+            self.printer(sensors_indications)
+            if not print_only:
+                log_dir = '../logs/{}.json'.format(log['timer'])
+                log['sensors_indications'] = sensors_indications
+                with open(log_dir, 'w') as fp:
+                    json.dump(log, fp)
+
+    def takePhoto(self):
+        timer = self.log['timer'].strftime("%m.%d.%Y, %H:%M:%S")
+        photo_dir = "../photos/{}.jpg".format(timer)
+        self.camera.start_preview()
+        time.sleep(3)
+        self.camera.capture(photo_dir)
+        self.camera.stop_preview()
 
     @staticmethod
     def printer(dictionary):

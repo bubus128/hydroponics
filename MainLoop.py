@@ -1,3 +1,4 @@
+from os import error
 from LightModule import LightModule
 from Logger import Logger
 from PeristalticPump import PeristalticPump
@@ -199,7 +200,11 @@ class Hydroponics:
         else:
             print('log file found')
 
-        self.mainLoop()
+        while True:
+            try:
+                self.mainLoop()
+            except Exception as e:
+                self.logger.logging(sensors_indications=None, error=e)
 
     def changePhase(self):
         phases_list = list(self.indication_limits.keys())
@@ -216,6 +221,7 @@ class Hydroponics:
             self.changePhase()
         self.day_of_phase += 1
         self.logger.nextDay()
+        self.logger.takePhoto()
 
     def waterSetup(self):
         self.logger.logging(sensors_indications=self.sensors_indications, message="filling with water")
@@ -231,6 +237,8 @@ class Hydroponics:
 
     def dayCycleControl(self):
         current_time = datetime.now()
+        if self.logger.getTimer().minute > current_time.minute:
+            self.logger.logging(sensors_indications=self.sensors_indications)
         if self.logger.getTimer().hour > current_time.hour:
             self.nextDay()
         self.logger.updateTime()
@@ -324,7 +332,7 @@ class Hydroponics:
                     fertilizer_delay -= self.loop_delay
             if self.modules['lights']:
                 self.dayCycleControl()
-            self.logger.logging(sensors_indications=self.sensors_indications)
+            self.logger.logging(sensors_indications=self.sensors_indications, print_only=True)
             time.sleep(self.loop_delay)
 
 
