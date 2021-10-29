@@ -54,7 +54,7 @@ class Logger:
     def getDayPhase(self):
         return self.log['day_phase']
 
-    def logging(self, sensors_indications, error=None, message=None):
+    def logging(self, sensors_indications, error=None, message=None, print_only=False):
         self.updateTime()
         if error is not None:
             err_dir = '../eroor_logs/day_{}_phase_{}.json'.format(self.log['day'],self.log['phase'])
@@ -65,16 +65,15 @@ class Logger:
         else:
             log = self.log.copy()
             log['timer'] = log['timer'].strftime("%m.%d.%Y, %H:%M:%S")
-            log_dir = '../logs/'
-            log_dir += log['timer']
-            log_dir += '.json'
             if message is not None:
                 log['message'] = message
             self.printer(log)
             self.printer(sensors_indications)
-            log['sensors_indications'] = sensors_indications
-            with open(log_dir, 'w') as fp:
-                json.dump(log, fp)
+            if not print_only:
+                log_dir = '../logs/{}.json'.format(log['timer'])
+                log['sensors_indications'] = sensors_indications
+                with open(log_dir, 'w') as fp:
+                    json.dump(log, fp)
 
     @staticmethod
     def printer(dictionary):
