@@ -221,7 +221,6 @@ class Hydroponics:
             self.changePhase()
         self.day_of_phase += 1
         self.logger.nextDay()
-        self.logger.takePhoto()
 
     def waterSetup(self):
         self.logger.logging(sensors_indications=self.sensors_indications, message="filling with water")
@@ -241,6 +240,8 @@ class Hydroponics:
             self.logger.logging(sensors_indications=self.sensors_indications)
         if self.logger.getTimer().hour > current_time.hour:
             self.nextDay()
+        elif self.logger.getTimer().hour < current_time.hour:
+            self.logger.takePhoto()
         self.logger.updateTime()
         current_hour = current_time.hour
         if self.daily_light_cycle[self.phase]['ON'] <= current_hour < self.daily_light_cycle[self.phase]['OFF']:
