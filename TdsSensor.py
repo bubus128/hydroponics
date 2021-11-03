@@ -24,6 +24,11 @@ class TdsSensor(Sensor):
                 tds = sum(tds_reads)/len(tds_reads)
                 return tds
             except:
-                time.sleep(0.5)
-                continue
+                try:
+                    self.bus.read_byte(self.arduino_addr)
+                    self.bus.read_byte(self.arduino_addr)
+                    self.bus.read_byte(self.arduino_addr)
+                except:
+                    time.sleep(0.5)
+                    continue
         return -1
