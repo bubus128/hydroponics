@@ -1,0 +1,9 @@
+{
+    "temperature": 1,
+    "humidity": 1,
+    "PH": 1,
+    "TDS": 1,
+    "water_level": 0,
+    "lights": 1,
+    "tsl": 1
+}

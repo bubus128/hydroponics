@@ -11,9 +11,9 @@ class TdsSensor(Sensor):
     def read(self):
         for i in range(10):
             try:
-                self.bus.write_byte(self.arduino_addr, 6)           # Switch to the tds sensor
                 tds_reads = []
                 for i in range(20):
+                    self.bus.write_byte(self.arduino_addr, 6)           # Switch to the tds sensor
                     self.bus.read_byte(self.arduino_addr)
                     tds_read = self.bus.read_byte(self.arduino_addr)          # Read high half of tds value and shift by 8
                     tds_read += self.bus.read_byte(self.arduino_addr)*2**8    # Read and add low half of tds value
