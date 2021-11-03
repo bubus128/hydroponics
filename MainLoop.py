@@ -10,6 +10,9 @@ from TdsSensor import TdsSensor
 from Module import Module
 import RPi.GPIO as GPIO
 import time
+import glob
+import os
+import json
 from datetime import datetime
 
 
@@ -27,147 +30,15 @@ class Hydroponics:
     booster_pump_num = 3
     fertilizer_a_pump_pin = 18
     fertilizer_b_pump_pin = 23
-    modules = {
-        'temperature': True,
-        'humidity': True,
-        'PH': True,
-        'TDS': True,
-        'water_level': False,
-        'lights': True,
-        'tsl': True
-    }
-    phase_duration = {
-        'flowering': 56,
-        'growth': 14,
-        'resting': 7
-    }
-    sensors_indications = {
-        'ph': None,
-        'tds': None,
-        'light': None,
-        'temperature': None,
-        'humidity': None
-    }
     day_of_phase = 0
     phase = 'resting'
     day_phase = 'day'
     log_file = None
-    '''
-    True -> module enabled
-    False -> module disabled
-    '''
-    codes = {
-        'to_low': 1,
-        'to_high': 2,
-        'correct': 0
-    }
-    daily_light_cycle = {
-        'resting': {
-            'ON': 3,
-            'OFF': 21
-        },
-        'flowering': {
-            'ON': 6,
-            'OFF': 18
-        },
-        'growth': {
-            'ON': 3,
-            'OFF': 21
-        }
-    }
-    indication_limits = {
-        'resting': {
-            'days': 7,
-            'ph': {
-                'standard': 6.1,
-                'hysteresis': 0.2
-            },
-            'tds': {
-                'standard': 0,
-                'hysteresis': 1000
-            },
-            'light': {
-                'standard': 1,
-                'hysteresis': 1
-            },
-            'temperature': {
-                'day': {
-                    'standard': 26,
-                    'hysteresis': 3
-                },
-                'night': {
-                    'standard': 24,
-                    'hysteresis': 3
-                }
-            },
-            'humidity': {
-                'standard': 70,
-                'hysteresis': 5
-            }
-        },
-        'growth': {
-            'days': 14,
-            'ph': {
-                'standard': 6.1,
-                'hysteresis': 0.2
-            },
-            'tds': {
-                'standard': 700,
-                'hysteresis': 100
-            },
-            'light': {
-                'standard': 1,
-                'hysteresis': 1
-            },
-            'temperature': {
-                'day': {
-                    'standard': 26,
-                    'hysteresis': 3
-                },
-                'night': {
-                    'standard': 24,
-                    'hysteresis': 3
-                }
-            },
-            'humidity': {
-                'standard': 70,
-                'hysteresis': 5
-            }
-        },
-        'flowering': {
-            'days': 56,
-            'ph': {
-                'standard': 6.1,
-                'hysteresis': 0.2
-            },
-            'tds': {
-                'standard': 1050,
-                'hysteresis': 200
-            },
-            'light': {
-                'standard': 1,
-                'hysteresis': 1
-            },
-            'temperature': {
-                'day': {
-                    'standard': 26,
-                    'hysteresis': 3
-                },
-                'night': {
-                    'standard': 24,
-                    'hysteresis': 3
-                }
-            },
-            'humidity': {
-                'standard': 70,
-                'hysteresis': 5
-            }
-        }
-    }
     lights_list = [0, 5, 6, 11, 13, 19]
     arduino_addr = 0x7  # Arduino nano address
 
     def __init__(self):
+        self.readDataFromJsons()
         self.logger = Logger()
         self.sensor_light = LightSensor()
         self.sensor_dht = DhtSensor()
@@ -210,11 +81,22 @@ class Hydroponics:
         phases_list = list(self.indication_limits.keys())
         phase_num = phases_list.index(self.phase)
         phase_num = (phase_num + 1) % len(phases_list)
-        self.day_of_phase = 0
+        self.day_of_phase = 1
         self.phase = phases_list[phase_num]
         #self.phase = 'flowering' if self.phase == 'growth' else 'growth'
         input('change fertilizers to {} phase and press ENTER'.format(self.phase))
         self.logger.changePhase(self.phase)
+
+    def readDataFromJsons(self):
+        list_of_files = glob.glob('./data-files/*.json')
+        for path in list_of_files:
+            with open(path) as file:
+                tmp_dict = dict(json.load(file))
+                for key, value in tmp_dict.items():
+                    if value == "None":
+                        value = None
+                name = os.path.splitext(os.path.basename(path))[0]
+                setattr(self, name, tmp_dict)
 
     def nextDay(self):
         if self.day_of_phase == self.phase_duration:
