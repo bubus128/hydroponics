@@ -88,14 +88,14 @@ class Hydroponics:
         self.logger.changePhase(self.phase)
 
     def readDataFromJsons(self):
-        list_of_files = glob.glob('/data-files/*.json')
+        list_of_files = glob.glob('./data-files/*.json')
         for path in list_of_files:
             with open(path) as file:
-                tmp_dict = json.load(file)
-                for key, value in tmp_dict:
+                tmp_dict = dict(json.load(file))
+                for key, value in tmp_dict.items():
                     if value == "None":
                         value = None
-                name = os.path.splitext(path)[0]
+                name = os.path.splitext(os.path.basename(path))[0]
                 setattr(self, name, tmp_dict)
 
     def nextDay(self):
