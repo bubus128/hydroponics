@@ -99,9 +99,10 @@ class Hydroponics:
                 setattr(self, name, tmp_dict)
 
     def nextDay(self):
-        if self.day_of_phase == self.phase_duration:
+        if self.day_of_phase >= self.phase_duration[self.phase]:
             self.changePhase()
-        self.day_of_phase += 1
+        else:
+            self.day_of_phase += 1
         self.logger.nextDay()
 
     def waterSetup(self):
