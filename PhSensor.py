@@ -19,9 +19,12 @@ class PhSensor(Sensor):
                 ph = sum(ph_reads)/len(ph_reads)
                 return ph
             except:
+                print("ph read error")
                 try:
                     self.bus.read_byte(self.arduino_addr)
                 except:
                     time.sleep(0.5)
                     continue
+                time.sleep(0.5)
+                continue
         return -1
