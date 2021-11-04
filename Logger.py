@@ -32,7 +32,7 @@ class Logger:
                 self.log['phase'] = log['phase']
                 self.log['day_phase'] = log['day_phase']
                 self.log['day_of_phase'] = log['day_of_phase']
-            return True
+            return self.log
 
     def changePhase(self, phase):
         self.log['phase'] = phase

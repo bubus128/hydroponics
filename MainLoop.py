@@ -36,6 +36,7 @@ class Hydroponics:
     log_file = None
     lights_list = [0, 5, 6, 11, 13, 19]
     arduino_addr = 0x7  # Arduino nano address
+    fertilizer_dosing = False
 
     def __init__(self):
         self.readDataFromJsons()
@@ -64,12 +65,15 @@ class Hydroponics:
         GPIO.output(9, GPIO.HIGH)
         GPIO.output(10, GPIO.HIGH)
 
-        if not self.logger.getLastLog():
+        last_log = self.logger.getLastLog()
+        if not last_log:
             print('log file not found')
             self.nextDay()
             self.waterSetup()
         else:
             print('log file found')
+            self.day_of_phase = last_log['day_of_phase']
+            self.phase = last_log['phase']
 
         while True:
             try:
@@ -157,8 +161,9 @@ class Hydroponics:
         if tds == -1:
             return self.codes['correct']
         self.sensors_indications['tds'] = tds
-        if tds < self.indication_limits[self.phase]['tds']['standard'] - \
-                self.indication_limits[self.phase]['tds']['hysteresis']:
+        tds_limit = self.indication_limits[self.phase]['tds']['standard'] if self.fertilizer_dosing else self.indication_limits[self.phase]['tds']['standard'] - self.indication_limits[self.phase]['tds']['hysteresis']
+        if tds < tds_limit:
+            self.fertilizer_dosing = True
             dose = 1
             self.fertilizer_pump_a.dosing(dose)
             self.fertilizer_pump_b.dosing(dose)
@@ -166,6 +171,7 @@ class Hydroponics:
                                 message="dosing {}ml of fertilizer".format(dose))
             return self.codes['to_low']
         else:
+            self.fertilizer_dosing = False
             return self.codes['correct']
 
     def temperatureControl(self):
