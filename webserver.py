@@ -1,32 +1,140 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from LightModule import LightModule
+from Logger import Logger
+from PhSensor import PhSensor
+from LightSensor import LightSensor
+from DhtSensor import DhtSensor
+from TdsSensor import TdsSensor
+from Module import Module
+import RPi.GPIO as GPIO
+import time
 
-class gownoHnadler(BaseHTTPRequestHandler):
+
+Dict = {"temperature": "28",
+        "humidity": "0",
+        "pH_level": "0",
+        "tds_level": "0",
+        "light": "15",
+
+        "turn_on_heater": "ok",
+        "turn_on_cooling": "ok",
+        "turn_off_heater": "ok",
+        "turn_off_cooling": "ok",
+        }
+
+
+class Hydroponics:
+    cooling_pin = 14
+    fan_pin = 15
+    atomizer_pin = 4
+    fertilizer_ml_per_second = 1.83
+    loop_delay = 10
+    fertilizer_delay = 60
+    ph_delay = 120
+    exceptions_attempts_count = 10
+
+    lights_list = [0, 5, 6, 11, 13, 19]
+
+    pumps = {
+        'ph+': 2,
+        'ph-': 1,
+        'boost': 3,
+        'fertilizer_A': 18,
+        'fertilizer_B': 23
+    }
+
+    def __init__(self):
+        self.logger = Logger()
+        self.sensor_light = LightSensor()
+        self.sensor_dht = DhtSensor()
+        self.tds_sensor = TdsSensor()
+        self.ph_sensor = PhSensor()
+        self.cooling = Module(self.cooling_pin)
+        self.fan = Module(self.fan_pin)
+        self.atomizer = Module(self.atomizer_pin, on_state='HIGH')
+        self.light_module = LightModule(self.lights_list)
+
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
+
+        # Fertilizer pumps
+        GPIO.setup(self.pumps['fertilizer_A'], GPIO.OUT)
+        GPIO.setup(self.pumps['fertilizer_B'], GPIO.OUT)
+        GPIO.output(self.pumps['fertilizer_A'], GPIO.HIGH)
+        GPIO.output(self.pumps['fertilizer_B'], GPIO.HIGH)
+
+        # Relay (unallocated)
+        GPIO.setup(9, GPIO.OUT)
+        GPIO.setup(10, GPIO.OUT)
+
+        # Off
+        GPIO.output(9, GPIO.HIGH)
+        GPIO.output(10, GPIO.HIGH)
+
+        # print(self.sensor_dht.readTemperature())
+        print(self.ph_sensor.read())
+
+
+hydroponics = Hydroponics()
+
+
+class HydroponicsHandler(BaseHTTPRequestHandler):
+
     def do_GET(self):
         self.send_response(200)
         self.send_header('content-typ', 'text/html')
         self.end_headers()
-        Dict = {"temperature": "0", "humidity": "0",
-                "water_level": "0", "pH_level": "0",
-                "tds_level": "0", "light": "15",}
-        if self.path[1:] == "temperature":
-            print("X")
-        elif self.path[1:] == "humidity":
-            print("X")
-        elif self.path[1:] == "water_level":
-            print("X")
-        elif self.path[1:] == "pH_level":
-            print("X")
-        elif self.path[1:] == "tds_level":
-            print("X")
-        elif self.path[1:] == "light":
-            print("X")
-        self.wfile.write(Dict[self.path[1:]].encode())
-            
-def main():
+        divided_path = self.path.split("/")
+        if divided_path[1] == "get":
+            if divided_path[2] == "temperature":
+                self.wfile.write(str(hydroponics.sensor_dht.readTemperature()).encode())
+            elif divided_path[2] == "humidity":
+                self.wfile.write(str(hydroponics.sensor_dht.readHumidity()).encode())
+            elif divided_path[2] == "ph":
+                self.wfile.write(str(hydroponics.ph_sensor.read()).encode())
+            elif divided_path[2] == "tds":
+                self.wfile.write(str(hydroponics.tds_sensor.read()).encode())
+            elif divided_path[2] == "light":
+                self.wfile.write(str(hydroponics.sensor_light.read()).encode())
+        elif divided_path[1] == "dose":
+            if divided_path[2] == 'ph':  # dose/ph/[SUBSTANCE]/[DOSE]
+                substance = divided_path[3]
+                dose = int(divided_path[4])
+                pump = hydroponics.pumps[substance]
+                data = [pump, dose]
+                hydroponics.bus.write_block_data(hydroponics.arduino_addr, 0, data)
+                self.wfile.write("OK".encode())  # TODO
+            elif divided_path[2] == 'fertilizer':
+                dose = 1
+                delay = dose / hydroponics.fertilizer_ml_per_second
+                GPIO.output(hydroponics.pumps['fertilizer_A'], GPIO.LOW)
+                GPIO.output(hydroponics.pumps['fertilizer_B'], GPIO.LOW)
+                time.sleep(delay)
+                GPIO.output(hydroponics.pumps['fertilizer_A'], GPIO.HIGH)
+                GPIO.output(hydroponics.pumps['fertilizer_B'], GPIO.HIGH)
+                self.wfile.write("OK".encode())  # TODO
+        elif divided_path[1] == 'switch':
+            if divided_path[2] == 'temperature':
+                if divided_path[3] == 'decrease':
+                    hydroponics.cooling.switch(True)
+                    hydroponics.fan.switch(True)
+                    self.wfile.write("OK".encode())  # TODO
+                elif divided_path[3] == 'increase':
+                    hydroponics.cooling.switch(False)
+                    hydroponics.fan.switch(False)
+                    self.wfile.write("OK".encode())  # TODO
+            elif divided_path[2] == 'humidity':
+                if divided_path[3] == 'decrease':
+                    hydroponics.fan.switch(True)
+                    hydroponics.atomizer.switch(False)
+                    self.wfile.write("OK".encode())  # TODO
+                elif divided_path[3] == 'increase':
+                    hydroponics.atomizer.switch(True)
+                    self.wfile.write("OK".encode())  # TODO
+
+
+if __name__ == '__main__':
     PORT = 8080
-    server = HTTPServer(('',PORT), gownoHnadler)
+    server = HTTPServer(('', PORT), HydroponicsHandler)
     print('Server running on port %s' % PORT)
     server.serve_forever()
-        
-if __name__ == '__main__':
-    main()

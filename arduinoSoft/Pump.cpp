@@ -24,3 +24,13 @@ void SyringePump::dosing(int dose){
     dose--;
   }
 }
+void SyringePump::refile(int dose){
+  while (dose>0){
+    for(int i=this->pinNum-1;i>=0;i--){
+      digitalWrite(this->pins[i],HIGH);
+      delay(this->stepDelay);
+      digitalWrite(this->pins[i],LOW);
+    }
+    dose--;
+  }
+}
