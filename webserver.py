@@ -113,7 +113,7 @@ class HydroponicsHandler(BaseHTTPRequestHandler):
                 GPIO.output(hydroponics.pumps['fertilizer_A'], GPIO.HIGH)
                 GPIO.output(hydroponics.pumps['fertilizer_B'], GPIO.HIGH)
                 self.wfile.write("OK".encode())  # TODO
-        elif divided_path[1] == 'switch':
+        elif divided_path[1] == 'manage':
             if divided_path[2] == 'temperature':
                 if divided_path[3] == 'decrease':
                     hydroponics.cooling.switch(True)
@@ -121,6 +121,9 @@ class HydroponicsHandler(BaseHTTPRequestHandler):
                     self.wfile.write("OK".encode())  # TODO
                 elif divided_path[3] == 'increase':
                     hydroponics.cooling.switch(False)
+                    hydroponics.fan.switch(False)
+                    self.wfile.write("OK".encode())  # TODO
+                elif divided_path[3] == 'remain':
                     hydroponics.fan.switch(False)
                     self.wfile.write("OK".encode())  # TODO
             elif divided_path[2] == 'humidity':

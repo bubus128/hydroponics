@@ -9,11 +9,13 @@ from airflow.providers.postgres.operators.postgres import PostgresOperator
 import requests
 from time import sleep
 
-address = ('https://1027f0e835e5.ngrok.io/')
+address = ('http://172.20.2.148:8000/')
 amount_of_checks = 3
 temp_upper_limit = 27
 temp_lower_limit = 21
 temp_middle_value = 24
+ideal_temperatere = 26
+hysteresis = 3
 
 args = {
     'owner': 'airflow',
@@ -21,39 +23,28 @@ args = {
 
 def measure_temp():
     sum=0
-    for i in range(amount_of_checks):
-        r = requests.get(address + 'temperature')
-        sum += int(r.text)
-        sleep(1)
-    sum /= amount_of_checks
+   # r = requests.get(address + 'temperature')
+   
+    sum = int(r.text)
     return sum
 
 def check_temp():
     temperature = measure_temp()
     print(temperature)
-    if temperature >= temp_upper_limit:
+    if temperature > ideal_temperatere + hysteresis
         return 'lower_temperature'
-    elif temperature <= temp_lower_limit:
+    elif temperature < ideal_temperatere:
         return 'raise_temperature'
     return 'everything_is_ok'
 	
 def raise_the_temperature():
-    r = requests.get(address + 'turn_on_heater')
-    raise_temperature = True
-    while(raise_temperature):
-        if(measure_temp() >= temp_middle_value):
-            raise_temperature = False
-        sleep(30)
-    r = requests.get(address + 'turn_off_heater')
+    r = requests.get(address + 'switch/manage/increase')
 
 def lower_the_temperature():
-    r = requests.get(address + 'turn_on_cooling')
-    lower_temperature = True
-    while(lower_temperature):
-        if(measure_temp() <= temp_middle_value):
-            lower_temperature = False
-        sleep(30)
-    r = requests.get(address + 'turn_off_cooling')
+    r = requests.get(address + 'switch/manage/decrease')
+    
+def turn_off_fan():
+    r = requests.get(address + 'switch/manage/decrease')
 	
 with DAG(
     dag_id='airflow_temperature',
@@ -71,7 +62,6 @@ with DAG(
         python_callable=check_temp
     )
 
-	
     lower_temperature = PythonOperator(
         task_id='lower_temperature',
         python_callable=lower_the_temperature
@@ -81,8 +71,9 @@ with DAG(
         python_callable=raise_the_temperature
     )
 	
-    everything_is_ok = DummyOperator(
+    everything_is_ok = PythonOperator(
         task_id='everything_is_ok'
+        python_callable=turn_off_fan
     )
 	
 check_temp >> lower_temperature
