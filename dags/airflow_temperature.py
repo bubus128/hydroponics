@@ -4,47 +4,47 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.python import PythonOperator
 from airflow.operators.python import BranchPythonOperator
+from airflow.models import Variable
 from airflow.utils.dates import days_ago
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 import requests
 from time import sleep
+import glob
+import json
 
-address = ('http://172.20.2.148:8000/')
-amount_of_checks = 3
-temp_upper_limit = 27
-temp_lower_limit = 21
-temp_middle_value = 24
-ideal_temperatere = 26
-hysteresis = 3
+address = Variable.get("RPI_IP", deserialize_json=False)
+variables = Variable.get("indication_limits", deserialize_json=True)
+ideal_temperatere = variables[Variable.get("phase")]["temperature"][Variable.get("time_of_day")]["standard"]
+hysteresis = variables[Variable.get("phase")]["temperature"][Variable.get("time_of_day")]["hysteresis"]
+
 
 args = {
     'owner': 'airflow',
 }
 
 def measure_temp():
-    sum=0
-   # r = requests.get(address + 'temperature')
-   
-    sum = int(r.text)
-    return sum
+    r = requests.get(address + '/get/temperature')
+    return float(r.text)
 
 def check_temp():
     temperature = measure_temp()
-    print(temperature)
-    if temperature > ideal_temperatere + hysteresis
+    if temperature > ideal_temperatere + hysteresis:
         return 'lower_temperature'
     elif temperature < ideal_temperatere:
         return 'raise_temperature'
     return 'everything_is_ok'
 	
 def raise_the_temperature():
-    r = requests.get(address + 'switch/manage/increase')
+    r = requests.get(address + '/manage/temperature/increase')
+    return
 
 def lower_the_temperature():
-    r = requests.get(address + 'switch/manage/decrease')
-    
-def turn_off_fan():
-    r = requests.get(address + 'switch/manage/decrease')
+    r = requests.get(address + '/manage/temperature/decrease')
+    return
+
+def ok_temperature():
+    r = requests.get(address + '/manage/temperature/remain')
+    return
 	
 with DAG(
     dag_id='airflow_temperature',
@@ -62,6 +62,7 @@ with DAG(
         python_callable=check_temp
     )
 
+	
     lower_temperature = PythonOperator(
         task_id='lower_temperature',
         python_callable=lower_the_temperature
@@ -72,8 +73,8 @@ with DAG(
     )
 	
     everything_is_ok = PythonOperator(
-        task_id='everything_is_ok'
-        python_callable=turn_off_fan
+        task_id='everything_is_ok',
+        python_callable=ok_temperature
     )
 	
 check_temp >> lower_temperature

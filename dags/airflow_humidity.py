@@ -4,20 +4,18 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.dummy import DummyOperator
 from airflow.operators.python import PythonOperator
 from airflow.operators.python import BranchPythonOperator
+from airflow.models import Variable
 from airflow.utils.dates import days_ago
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 import requests
 from time import sleep
-from airflow.models import Variable
+import glob
+import json
 
-address = ('https://1027f0e835e5.ngrok.io/')
-amount_of_checks = 3
-growth_min_value = 55
-growth_max_value = 80
-growth_avg_value = 70
-flowering_min_value = 35 
-flowering_max_value = 47
-flowering_avg_value = 60
+address = Variable.get("RPI_IP", deserialize_json=False)
+variables = Variable.get("indication_limits", deserialize_json=True)
+ideal_humidity = variables[Variable.get("phase")]["humidity"]["standard"]
+hysteresis = variables[Variable.get("phase")]["humidity"]["hysteresis"]
 
 
 args = {
@@ -25,60 +23,35 @@ args = {
 }
 
 def measure_humidity():
-    sum=0
-    for i in range(amount_of_checks):
-        r = requests.get(address + 'measure_humidity')
-        sum+=int(r.text)
-        sleep(5)
-    sum/=amount_of_checks
-    return sum
+    r = requests.get(address + '/get/humidity')
+    return float(r.text)
 
 def check_humidity():
-    if Variable.get("WHAT_PHASE_IT_IT") == "flowering":
-        min_value = flowering_min_value
-        max_value = flowering_max_value
-    else:
-        min_value = growth_min_value
-        max_value = growth_max_value
-    hum_value = measure_humidity()
-    if hum_value < min_value:
-        return 'low_humidity'
-    if hum_value > max_value:
-        return 'high_humidity'
-    return 'normal_val'
+    humidity = measure_humidity()
+    if humidity > ideal_humidity + hysteresis:
+        return 'decrease_humidity'
+    elif humidity < ideal_humidity - hysteresis:
+        return 'increase_humidity'
+    return 'ok_humidity'
 
-def low_humidity():
-    if Variable.get("WHAT_PHASE_IT_IT") == "flowering":
-        avg_value = flowering_avg_value
-    else:
-        avg_value = growth_avg_value
-    humidity_too_low = True
-    while(humidity_too_low):
-        r = requests.get(address + 'turn_on_atomizer')
-        sleep(60)
-        hum = measure_humidity()
-        if hum >= avg_value:
-            humidity_too_low = False
+def decrease_humidity():
+    r = requests.get(address + '/manage/humidity/decrease')
+    return
 
-def high_humidity():
-    if Variable.get("WHAT_PHASE_IT_IT") == "flowering":
-        avg_value = flowering_avg_value
-    else:
-        avg_value = growth_avg_value
-    humidity_too_high = True
-    while(humidity_too_high):
-        r = requests.get(address + 'turn_on_fan')
-        sleep(60)
-        hum = measure_humidity()
-        if hum <= avg_value:
-            humidity_too_high = False
+def increase_humidity():
+    r = requests.get(address + '/manage/humidity/increase')
+    return
+
+def ok_humidity():
+    r = requests.get(address + '/manage/humidity/remain')
+    return
 
 
 with DAG(
     dag_id='airflow_humidity',
     default_args=args,
     catchup=False,
-    schedule_interval='*/3 * * * *', #At every 3rd minute.
+    schedule_interval='*/1 * * * *',
 	max_active_runs=1,
     start_date=days_ago(2),
     dagrun_timeout=timedelta(hours=10),
@@ -90,32 +63,25 @@ with DAG(
         python_callable=check_humidity
     )
 
-    low_humidity = PythonOperator(
-        task_id='low_humidity',
-        python_callable=low_humidity
+    decrease_humidity = PythonOperator(
+        task_id='decrease_humidity',
+        python_callable=decrease_humidity
     )
 
-    high_humidity = PythonOperator(
-        task_id='high_humidity',
-        python_callable=high_humidity
+    increase_humidity = PythonOperator(
+        task_id='increase_humidity',
+        python_callable=increase_humidity
     )
 
-    normal_val = DummyOperator(
-        task_id='normal_val'
-    )
-
-    humidity_increased = DummyOperator(
-        task_id='humidity_increased'
-    )
-
-    humidity_decreased = DummyOperator(
-        task_id='humidity_decreased'
+    ok_humidity = PythonOperator(
+        task_id='ok_humidity',
+        python_callable=ok_humidity
     )
 
 
-check_humidity >> low_humidity >> humidity_increased
-check_humidity >> high_humidity >> humidity_decreased
-check_humidity >> normal_val
+check_humidity >> decrease_humidity
+check_humidity >> increase_humidity
+check_humidity >> ok_humidity
 
 if __name__ == "__main__":
     dag.cli()
