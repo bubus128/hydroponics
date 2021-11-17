@@ -19,7 +19,7 @@ args = {
 }
 
 def take_photo():
-    r = requests.get(address + '/takePhoto')
+    r = requests.post(address + '/takePhoto')
     return
 
 with DAG(

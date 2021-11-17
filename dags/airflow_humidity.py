@@ -23,7 +23,7 @@ args = {
 }
 
 def measure_humidity():
-    r = requests.get(address + '/get/humidity')
+    r = requests.get(address + '/humidity')
     return float(r.text)
 
 def check_humidity():
@@ -35,15 +35,15 @@ def check_humidity():
     return 'ok_humidity'
 
 def decrease_humidity():
-    r = requests.get(address + '/manage/humidity/decrease')
+    r = requests.post(address + '/manage/humidity/decrease')
     return
 
 def increase_humidity():
-    r = requests.get(address + '/manage/humidity/increase')
+    r = requests.post(address + '/manage/humidity/increase')
     return
 
 def ok_humidity():
-    r = requests.get(address + '/manage/humidity/remain')
+    r = requests.post(address + '/manage/humidity/remain')
     return
 
 

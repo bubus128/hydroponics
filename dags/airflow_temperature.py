@@ -23,7 +23,7 @@ args = {
 }
 
 def measure_temp():
-    r = requests.get(address + '/get/temperature')
+    r = requests.get(address + '/temperature')
     return float(r.text)
 
 def check_temp():
@@ -35,15 +35,15 @@ def check_temp():
     return 'everything_is_ok'
 	
 def raise_the_temperature():
-    r = requests.get(address + '/manage/temperature/increase')
+    r = requests.post(address + '/manage/temperature/increase')
     return
 
 def lower_the_temperature():
-    r = requests.get(address + '/manage/temperature/decrease')
+    r = requests.post(address + '/manage/temperature/decrease')
     return
 
 def ok_temperature():
-    r = requests.get(address + '/manage/temperature/remain')
+    r = requests.post(address + '/manage/temperature/remain')
     return
 	
 with DAG(

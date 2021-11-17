@@ -24,7 +24,7 @@ args = {
 }
 
 def measure_tds():
-    r = requests.get(address + '/get/tds')
+    r = requests.get(address + '/tds')
     return float(r.text)
 
 def check_tds():
@@ -37,7 +37,7 @@ def check_tds():
     return 'everything_is_ok'
 	
 def raise_the_tds():
-    r = requests.get(address + '/dose/fertilizer')
+    r = requests.post(address + '/dose/fertilizer')
     fertilizer_dosing = True
     return
 

@@ -37,11 +37,11 @@ def check_day_time():
     return 'everything_is_ok'
 	
 def switch_off_lights():
-    r = requests.get(address + '/light/off')
+    r = requests.post(address + '/light/off')
     return
 
 def switch_on_lights():
-    r = requests.get(address + '/light/on')
+    r = requests.post(address + '/light/on')
     return
 
 	
