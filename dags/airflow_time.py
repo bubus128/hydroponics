@@ -29,13 +29,13 @@ def check_day():
         Variable.set("day", str(new_days))
         Variable.set("day_of_month", str(datetime.datetime.today().day))
         days_limit = limits[phase]["days"]
-        if new_days > int(days_limit):
-            if phase == "growth":
-                phase = Variable.set("phase", "flowering")
-            if phase == "resting":
-                phase = Variable.set("phase", "growth")
-            if phase == "flowering":
-                print("there are no more steps") #TODO
+        # if new_days > int(days_limit):
+        #     if phase == "growth":
+        #         phase = Variable.set("phase", "flowering")
+        #     if phase == "resting":
+        #         phase = Variable.set("phase", "growth")
+        #     if phase == "flowering":
+        #         print("there are no more steps") #TODO
     return
 	
 

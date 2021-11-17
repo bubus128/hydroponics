@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, timezone
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.dummy import DummyOperator
@@ -11,7 +11,7 @@ import requests
 from time import sleep
 import glob
 import json
-
+import datetime
 address = Variable.get("RPI_IP", deserialize_json=False)
 light_cycle_hours = Variable.get("daily_light_cycle", deserialize_json=True)
 curr_phase_night_hour = light_cycle_hours[Variable.get("phase")]['OFF']
@@ -25,6 +25,9 @@ args = {
 def check_day_time():
     time_of_the_day = Variable.get("time_of_day")
     curr_hour = datetime.datetime.now().hour
+    print(curr_hour)
+    print(curr_phase_night_hour)
+    print(curr_phase_day_hour)
     if time_of_the_day == "night" and curr_hour == int(curr_phase_day_hour):
         Variable.set("time_of_day", "day")
         return 'switch_on_lights'
@@ -46,9 +49,9 @@ with DAG(
     dag_id='airflow_light',
     default_args=args,
     catchup=False,
-    schedule_interval='* */1 * * *',
+    schedule_interval='0 * * * *',
 	max_active_runs=1,
-    start_date=days_ago(2),
+    start_date=days_ago(0),
     dagrun_timeout=timedelta(hours=10),
     params={"example_key": "example_value"},
 ) as dag:
