@@ -137,3 +137,7 @@ vsbuild/
 
 #Pycharm
 .idea/
+
+#others
+old_logs/
+schemat/
