@@ -11,7 +11,6 @@ from SyringePump import SyringePump
 import RPi.GPIO as GPIO
 from datetime import datetime
 from picamera import PiCamera
-import time
 
 
 
@@ -43,11 +42,27 @@ class Hydroponics:
         self.fan = Module(self.fan_pin)
         self.atomizer = Module(self.atomizer_pin, on_state='HIGH')
         self.light_module = LightModule(self.lights_list)
-        self.camera = PiCamera()
+        self.logger = Logger()
+        last_log = self.logger.getLastLog()
+        if not last_log:
+            print('log file not found')
+            self.nextDay()
+            self.waterSetup()
+        else:
+            print('log file found')
+            self.day_of_phase = last_log['day_of_phase']
+            self.phase = last_log['phase']
         self.fertilizer_pump_a = PeristalticPump(self.fertilizer_a_pump_pin)
         self.fertilizer_pump_b = PeristalticPump(self.fertilizer_b_pump_pin)
         self.ph_plus_pump = SyringePump(self.ph_plus_pump_num)
         self.ph_minus_pump = SyringePump(self.ph_minus_pump_num)
+        self.sensors_indications = {
+                    "ph": "None",
+                    "tds": "None",
+                    "light": "None",
+                    "temperature": "None",
+                    "humidity": "None"
+                    }
 
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
@@ -74,75 +89,99 @@ class HydroponicsHandler(BaseHTTPRequestHandler):
         self.end_headers()
         divided_path = self.path.split("/")
         if divided_path[1] == "temperature":
-            self.wfile.write(str(hydroponics.sensor_dht.readTemperature()).encode())
+            temperature = hydroponics.sensor_dht.readTemperature()
+            self.wfile.write(str(temperature).encode())
+            hydroponics.sensors_indications['temperature'] = temperature
         elif divided_path[1] == "humidity":
-            self.wfile.write(str(hydroponics.sensor_dht.readHumidity()).encode())
+            humidity = hydroponics.sensor_dht.readHumidity()
+            self.wfile.write(str(humidity).encode())
+            hydroponics.sensors_indications['humidity'] = humidity
         elif divided_path[1] == "ph":
-            self.wfile.write(str(hydroponics.ph_sensor.read()).encode())
+            ph = hydroponics.ph_sensor.read()
+            self.wfile.write(str(ph).encode())
+            hydroponics.sensors_indications['ph'] = ph
         elif divided_path[1] == "tds":
-            self.wfile.write(str(hydroponics.tds_sensor.read()).encode())
+            tds = hydroponics.tds_sensor.read()
+            self.wfile.write(str(tds).encode())
+            hydroponics.sensors_indications['tds'] = tds
         elif divided_path[1] == "light":
-            self.wfile.write(str(hydroponics.sensor_light.read()).encode())
+            light = hydroponics.sensor_light.read()
+            self.wfile.write(str(light).encode())
+            hydroponics.sensors_indications['light'] = light
 
     def do_POST(self):
         self.send_response(200)
         self.send_header('content-typ', 'text/html')
         self.end_headers()
         divided_path = self.path.split("/")
+        content_length = int(self.headers['Content-Length'])
+        post_data = self.rfile.read(content_length)
+        data = post_data.decode('utf-8')
+        print(data)
 
         if divided_path[1] == "takePhoto":
-            timer = datetime.now().strftime("%m.%d.%Y, %H:%M:%S")
-            photo_dir = "../airflow_photos/{}.jpg".format(timer)
-            hydroponics.camera.start_preview()
-            time.sleep(1)
-            hydroponics.camera.capture(photo_dir)
-            hydroponics.camera.stop_preview()
-            self.wfile.write("OK".encode())  # TODO
+            hydroponics.logger.takePhoto()
+            self.wfile.write("OK".encode())  
 
-        elif divided_path[1] == "dose":
-            if divided_path[2] == 'ph-':
+        elif divided_path[1].startswith("logData"):
+            if hydroponics.logger.log['phase'] != data and data != '':
+                hydroponics.logger.changePhase(data)
+            current_time = datetime.now()
+            if hydroponics.logger.getTimer().hour > current_time.hour:
+                hydroponics.logger.nextDay()
+            hydroponics.logger.logging(sensors_indications=hydroponics.sensors_indications, print_only=False)
+            self.wfile.write("OK".encode())  
+
+        elif divided_path[1].startswith("changeDayPhase"):
+            if data == 'day':
+                hydroponics.logger.day()
+            elif data == 'night':
+                hydroponics.logger.night()
+
+        elif divided_path[1].startswith("dose"):
+            if data == 'ph-':
                 hydroponics.ph_minus_pump.dosing(1)
-                self.wfile.write("OK".encode())  # TODO
-            if divided_path[2] == 'ph+':
+                self.wfile.write("OK".encode())  
+            elif data == 'ph+':
                 hydroponics.ph_plus_pump.dosing(1)
-                self.wfile.write("OK".encode())  # TODO
-            elif divided_path[2] == 'fertilizer':
+                self.wfile.write("OK".encode())  
+            elif data == 'fertilizer':
                 hydroponics.fertilizer_pump_a.dosing(1)
                 hydroponics.fertilizer_pump_b.dosing(1)
-                self.wfile.write("OK".encode())  # TODO
+                self.wfile.write("OK".encode())  
 
-        elif divided_path[1] == 'manage':
-            if divided_path[2] == 'temperature':
-                if divided_path[3] == 'decrease':
-                    hydroponics.cooling.switch(True)
-                    hydroponics.fan.switch(True)
-                    self.wfile.write("OK".encode())  # TODO
-                elif divided_path[3] == 'increase':
-                    hydroponics.cooling.switch(False)
-                    hydroponics.fan.switch(False)
-                    self.wfile.write("OK".encode())  # TODO
-                elif divided_path[3] == 'remain':
-                    hydroponics.fan.switch(False)
-                    self.wfile.write("OK".encode())  # TODO
-            elif divided_path[2] == 'humidity':
-                if divided_path[3] == 'decrease':
-                    hydroponics.fan.switch(True)
-                    hydroponics.atomizer.switch(False)
-                    self.wfile.write("OK".encode())  # TODO
-                elif divided_path[3] == 'increase':
-                    hydroponics.atomizer.switch(True)
-                    self.wfile.write("OK".encode())  # TODO
-                elif divided_path[3] == 'remain':
-                    hydroponics.atomizer.switch(False)
-                    self.wfile.write("OK".encode())  # TODO
+        elif divided_path[1].startswith("temperature"):
+            if data == 'decrease':
+                hydroponics.cooling.switch(True)
+                hydroponics.fan.switch(True)
+                self.wfile.write("OK".encode())  
+            elif data == 'increase':
+                hydroponics.cooling.switch(False)
+                hydroponics.fan.switch(False)
+                self.wfile.write("OK".encode())  
+            elif data == 'remain':
+                hydroponics.fan.switch(False)
+                self.wfile.write("OK".encode())  
 
-        elif divided_path[1] == "light":
-            if divided_path[2] == 'on':
+        elif divided_path[1].startswith('humidity'):
+            if data == 'decrease':
+                hydroponics.fan.switch(True)
+                hydroponics.atomizer.switch(False)
+                self.wfile.write("OK".encode())  
+            elif data == 'increase':
+                hydroponics.atomizer.switch(True)
+                self.wfile.write("OK".encode())  
+            elif data == 'remain':
+                hydroponics.atomizer.switch(False)
+                self.wfile.write("OK".encode())  
+
+        elif divided_path[1].startswith("light"):
+            if data == 'on':
                 hydroponics.light_module.switch('ON')
-                self.wfile.write("OK".encode())  # TODO
-            elif divided_path[2] == 'off':
+                self.wfile.write("OK".encode())  
+            elif data == 'off':
                 hydroponics.light_module.switch('OFF')
-                self.wfile.write("OK".encode())  # TODO
+                self.wfile.write("OK".encode())  
 
 
 if __name__ == '__main__':

@@ -35,15 +35,15 @@ def check_temp():
     return 'everything_is_ok'
 	
 def raise_the_temperature():
-    r = requests.post(address + '/manage/temperature/increase')
+    r = requests.post(address + '/temperature', data = 'increase')
     return
 
 def lower_the_temperature():
-    r = requests.post(address + '/manage/temperature/decrease')
+    r = requests.post(address + '/temperature', data = 'decrease')
     return
 
 def ok_temperature():
-    r = requests.post(address + '/manage/temperature/remain')
+    r = requests.post(address + '/temperature', data = 'remain')
     return
 	
 with DAG(

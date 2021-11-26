@@ -26,9 +26,9 @@ with DAG(
     dag_id='airflow_camera',
     default_args=args,
     catchup=False,
-    schedule_interval= '0 */1 * * *',
+    schedule_interval= '0 * * * *',
 	max_active_runs=1,
-    start_date=days_ago(2),
+    start_date=days_ago(0),
     dagrun_timeout=timedelta(hours=10),
     params={"example_key": "example_value"},
 ) as dag:

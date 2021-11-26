@@ -35,11 +35,11 @@ def check_ph():
     return 'everything_is_ok'
 	
 def raise_the_ph():
-    r = requests.post(address + '/dose/ph+')
+    r = requests.post(address + '/dose', data ='ph+')
     return
 
 def lower_the_ph():
-    r = requests.post(address + '/dose/ph-')
+    r = requests.post(address + '/dose', data='ph-')
     return
 
 def ok_ph():

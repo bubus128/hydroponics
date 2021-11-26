@@ -37,7 +37,7 @@ def check_tds():
     return 'everything_is_ok'
 	
 def raise_the_tds():
-    r = requests.post(address + '/dose/fertilizer')
+    r = requests.post(address + '/dose', data = "fertilizer")
     fertilizer_dosing = True
     return
 

@@ -30,18 +30,20 @@ def check_day_time():
     print(curr_phase_day_hour)
     if time_of_the_day == "night" and curr_hour == int(curr_phase_day_hour):
         Variable.set("time_of_day", "day")
+        r = requests.post(address + '/changeDayPhase', data ='day')
         return 'switch_on_lights'
     elif time_of_the_day == "day" and curr_hour == int(curr_phase_night_hour):
         Variable.set("time_of_day", "night")
+        r = requests.post(address + '/changeDayPhase', data ='night')
         return 'switch_off_lights'
     return 'everything_is_ok'
 	
 def switch_off_lights():
-    r = requests.post(address + '/light/off')
+    r = requests.post(address + '/light', data='off')
     return
 
 def switch_on_lights():
-    r = requests.post(address + '/light/on')
+    r = requests.post(address + '/light', data='on')
     return
 
 	
@@ -49,7 +51,7 @@ with DAG(
     dag_id='airflow_light',
     default_args=args,
     catchup=False,
-    schedule_interval='0 * * * *',
+    schedule_interval='*/1 * * * *',
 	max_active_runs=1,
     start_date=days_ago(0),
     dagrun_timeout=timedelta(hours=10),

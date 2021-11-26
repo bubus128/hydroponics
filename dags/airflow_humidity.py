@@ -35,15 +35,15 @@ def check_humidity():
     return 'ok_humidity'
 
 def decrease_humidity():
-    r = requests.post(address + '/manage/humidity/decrease')
+    r = requests.post(address + '/humidity', data='decrease')
     return
 
 def increase_humidity():
-    r = requests.post(address + '/manage/humidity/increase')
+    r = requests.post(address + '/humidity', data = 'increase')
     return
 
 def ok_humidity():
-    r = requests.post(address + '/manage/humidity/remain')
+    r = requests.post(address + '/humidity',data='remain')
     return
 
 
