@@ -1,16 +1,14 @@
 {
-	"daily_light_cycle":{
-		"resting": {
-			"ON": 4,
-			"OFF": 20
-		},
-		"flowering": {
-			"ON": 6,
-			"OFF": 18
-		},
-		"growth": {
-			"ON": 3,
-			"OFF": 21
-		}
-	}
+    "resting": {
+        "ON": 4,
+        "OFF": 20
+    },
+    "flowering": {
+        "ON": 6,
+        "OFF": 18
+    },
+    "growth": {
+        "ON": 3,
+        "OFF": 21
+    }
 }
