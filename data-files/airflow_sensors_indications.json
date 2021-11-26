@@ -1,7 +1,9 @@
 {
-    "ph": "None",
-    "tds": "None",
-    "light": "None",
-    "temperature": "None",
-    "humidity": "None"
+	"sensor_indications":{
+		"ph": "None",
+		"tds": "None",
+		"light": "None",
+		"temperature": "None",
+		"humidity": "None"
+	}
 }
