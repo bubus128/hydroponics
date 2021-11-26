@@ -16,12 +16,12 @@
 			},
 			"temperature": {
 				"day": {
-					"standard": 26,
-					"hysteresis": 3
+					"standard": 24,
+					"hysteresis": 2
 				},
 				"night": {
-					"standard": 24,
-					"hysteresis": 3
+					"standard": 21,
+					"hysteresis": 2
 				}
 			},
 			"humidity": {
@@ -45,12 +45,12 @@
 			},
 			"temperature": {
 				"day": {
-					"standard": 26,
-					"hysteresis": 3
+					"standard": 24,
+					"hysteresis": 2
 				},
 				"night": {
-					"standard": 24,
-					"hysteresis": 3
+					"standard": 21,
+					"hysteresis": 2
 				}
 			},
 			"humidity": {
@@ -74,16 +74,16 @@
 			},
 			"temperature": {
 				"day": {
-					"standard": 26,
-					"hysteresis": 3
+					"standard": 24,
+					"hysteresis": 2
 				},
 				"night": {
-					"standard": 24,
-					"hysteresis": 3
+					"standard": 21,
+					"hysteresis": 2
 				}
 			},
 			"humidity": {
-				"standard": 70,
+				"standard": 50,
 				"hysteresis": 5
 			}
 		}
