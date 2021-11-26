@@ -185,7 +185,7 @@ class Hydroponics:
             self.cooling.switch(False)
             self.fan.switch(False)
         else:
-            self.fan.switch(False)
+            self.cooling.switch(True)
 
     def humidityControl(self):
         humidity = self.sensor_dht.readHumidity()
