@@ -1,8 +1,0 @@
-{
-	"time":{
-		"day": 18,
-		"phase": "growth",
-		"day_time": "day",
-		"day_of_month" : 15
-	}
-}
