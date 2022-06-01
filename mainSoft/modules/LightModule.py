@@ -1,4 +1,4 @@
-from Module import Module
+from modules.Module import Module
 import RPi.GPIO as GPIO
 
 

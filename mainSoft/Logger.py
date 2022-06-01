@@ -17,10 +17,15 @@ class Logger:
     error_header = "----------ERROR----------"
 
     def __init__(self):
+        """
+        1. Set the timer
+        2. Initialize the camera
+        """
         self.log['timer'] = datetime.now()
         self.camera = PiCamera()
 
     def getLastLog(self):
+        """Load last log file and set parameters"""
         list_of_files = glob.glob('../logs/*.json')
         if len(list_of_files) == 0:
             return False
@@ -35,29 +40,41 @@ class Logger:
             return self.log
 
     def changePhase(self, phase):
+        """Change the phase
+        
+        Keyword arguments:
+        phase -- phase to switch
+        """
         self.log['phase'] = phase
         self.log['day_of_phase'] = 0
 
     def nextDay(self):
+        """Switch to the next day"""
         self.log['day'] += 1
         self.log['day_of_phase'] += 1
 
     def getTimer(self):
+        """Return current timer"""
         return self.log['timer']
 
     def updateTime(self):
+        """Timer update"""
         self.log['timer'] = datetime.now()
 
     def day(self):
+        """Set day phase to day"""
         self.log['day_phase'] = 'day'
 
     def night(self):
+        """Set day phase to night"""
         self.log['day_phase'] = 'night'
 
     def getDayPhase(self):
+        """Return current day phase"""
         return self.log['day_phase']
 
     def logging(self, sensors_indications, error=None, message=None, print_only=False):
+        """Create a log and save it"""
         self.updateTime()
         if error is not None:
             err_dir = '../error_logs/day_{}_phase_{}.json'.format(self.log['day'], self.log['phase'])
@@ -79,6 +96,7 @@ class Logger:
                     json.dump(log, fp)
 
     def takePhoto(self):
+        """Take a photo and save it"""
         timer = self.log['timer'].strftime("%m.%d.%Y, %H:%M:%S")
         photo_dir = "../photos/{}.jpg".format(timer)
         self.camera.start_preview()
@@ -88,5 +106,10 @@ class Logger:
 
     @staticmethod
     def printer(dictionary):
+        """Print given dictionary in pattern 'key : value'
+        
+        Keyword arguments:
+        dictionary -- dictionary to print
+        """
         for key, value in dictionary.items():
             print(key, ' : ', value)

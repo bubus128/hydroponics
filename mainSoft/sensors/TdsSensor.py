@@ -1,4 +1,4 @@
-from Sensor import Sensor
+from sensors.Sensor import Sensor
 import time
 
 
