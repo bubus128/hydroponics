@@ -57,11 +57,11 @@ class Hydroponics:
         self.ph_plus_pump = SyringePump(self.ph_plus_pump_num)
         self.ph_minus_pump = SyringePump(self.ph_minus_pump_num)
         self.sensors_indications = {
-                    "ph": "None",
-                    "tds": "None",
-                    "light": "None",
-                    "temperature": "None",
-                    "humidity": "None"
+                    "ph": None,
+                    "tds": None,
+                    "light": None,
+                    "temperature": None,
+                    "humidity": None
                     }
 
         GPIO.setmode(GPIO.BCM)

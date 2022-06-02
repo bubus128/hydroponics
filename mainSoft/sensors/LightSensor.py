@@ -1,4 +1,4 @@
-from Sensor import Sensor
+from sensors.Sensor import Sensor
 import adafruit_tsl2591
 import board
 import time
